@@ -34,3 +34,6 @@
 *.db
 *.db-shm
 *.db-wal
+
+.vs
+*.vs
