@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+.vs/WindowsProgramLearn/v16/Browse.VC.opendb
+*.db
+*.db-shm
+*.db-wal
