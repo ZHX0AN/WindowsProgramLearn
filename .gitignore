@@ -50,3 +50,5 @@
 *.pdb
 *.ilk
 .vs/WindowsProgramLearn/v16/.suo
+
+Debug/
