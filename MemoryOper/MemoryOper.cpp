@@ -2,7 +2,7 @@
 //
 
 #include <iostream>
-#include <Windows.h>
+#include <Windows.h>s
 #include <TlHelp32.h>
 #include <iostream>
 #include <sstream>
@@ -142,12 +142,7 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	DWORD header2 = GetWxMemoryInt(hProcess, roomAddress + 4);
 	DWORD header3 = GetWxMemoryInt(hProcess, roomAddress + 8);
 
-	
-	//打印微信群号和群主微信ID
-	//_tprintf(TEXT("ChatRoom No:"));
-	//_tprintf(TEXT("abc@12: \n"));
-	//_tprintf(TEXT("Ower :"));
-	//_tprintf(TEXT("wxid_123: \n"));
+
 
 	//群号
 	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x10), GetWxMemoryInt(hProcess, roomAddress + 0x14));
