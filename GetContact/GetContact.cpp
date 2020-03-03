@@ -74,6 +74,7 @@ int main()
 	std::cout << "ProcessID:" << weChatProcessID << endl;
 	//weChatProcessID = 0x1680;
 	hProcess = OpenProcess(PROCESS_ALL_ACCESS, TRUE, weChatProcessID);
+	std::cout << "hProcess:" << hProcess << endl;
 	if (hProcess == NULL)
 	{
 		std::cout << "open wechat error" << endl;
