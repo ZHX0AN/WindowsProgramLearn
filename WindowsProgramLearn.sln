@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.87
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProcessInfo", "ProcessInfo\ProcessInfo.vcxproj", "{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryOper", "MemoryOper\MemoryOper.vcxproj", "{46EDD2C7-07AC-4823-A2FE-A88528C9036B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommonFiles", "CommonFiles", "{2CE2E9C7-BE08-4789-8B0C-EBAA146F1A22}"
@@ -12,6 +10,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetContact", "GetContact\GetContact.vcxproj", "{D17089E0-B8B9-4858-B08C-F600B94499B6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InjectDllTools", "InjectDllTools\InjectDllTools.vcxproj", "{6F41A39D-7C03-46D1-BE86-1E6CA6090FE3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WxUserInfo", "WxUserInfo\WxUserInfo.vcxproj", "{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,14 +21,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Debug|x64.ActiveCfg = Debug|x64
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Debug|x64.Build.0 = Debug|x64
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Debug|x86.ActiveCfg = Debug|Win32
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Debug|x86.Build.0 = Debug|Win32
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Release|x64.ActiveCfg = Release|x64
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Release|x64.Build.0 = Release|x64
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Release|x86.ActiveCfg = Release|Win32
-		{AB9117DB-8EB0-4A65-B24A-D8FE380FAA77}.Release|x86.Build.0 = Release|Win32
 		{46EDD2C7-07AC-4823-A2FE-A88528C9036B}.Debug|x64.ActiveCfg = Debug|x64
 		{46EDD2C7-07AC-4823-A2FE-A88528C9036B}.Debug|x64.Build.0 = Debug|x64
 		{46EDD2C7-07AC-4823-A2FE-A88528C9036B}.Debug|x86.ActiveCfg = Debug|Win32
@@ -53,6 +45,14 @@ Global
 		{6F41A39D-7C03-46D1-BE86-1E6CA6090FE3}.Release|x64.Build.0 = Release|x64
 		{6F41A39D-7C03-46D1-BE86-1E6CA6090FE3}.Release|x86.ActiveCfg = Release|Win32
 		{6F41A39D-7C03-46D1-BE86-1E6CA6090FE3}.Release|x86.Build.0 = Release|Win32
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Debug|x64.ActiveCfg = Debug|x64
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Debug|x64.Build.0 = Debug|x64
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Debug|x86.ActiveCfg = Debug|Win32
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Debug|x86.Build.0 = Debug|Win32
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x64.ActiveCfg = Release|x64
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x64.Build.0 = Release|x64
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x86.ActiveCfg = Release|Win32
+		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
