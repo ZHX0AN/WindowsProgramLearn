@@ -19,6 +19,7 @@ BOOL ProcessNext(HANDLE m_hSnapshot, PPROCESSENTRY32 ppe);
 BOOL GetProcessCmdLine(DWORD PID, LPTSTR szCmdLine, DWORD Size);
 PVOID GetModulePreferredBaseAddr(DWORD dwProcessId, PVOID pvModuleRemote);
 int HowManyHeaps(HANDLE m_hSnapshot);
+VOID TcharToChar(const TCHAR* tchar, char* _char);
 
 VOID InjectDll(HWND   hwndDlg);
 
@@ -38,10 +39,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 //收信息
-char DllFileName[] = "C:\\workspaces\\thrid\\WxDllHookTest\\Debug\\WxDllHookTest.dll";
-//char DllFileName[] = "C:\\workspaces\\pc\\demo\\C_inject\\Debug\\SQLite_CPP2.dll";
-
-DWORD strSize = strlen(DllFileName) + 1;
+//char DllFileName[] = "C:\\workspaces\\thrid\\WxDllHookTest\\Debug\\WxDllHookTest.dll";
+////char DllFileName[] = "C:\\workspaces\\pc\\demo\\C_inject\\Debug\\SQLite_CPP2.dll";
+//
+//DWORD strSize = strlen(DllFileName) + 1;
 
 INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
@@ -108,8 +109,17 @@ VOID InjectDll(HWND   hwndDlg) {
 		MessageBox(NULL, TEXT("打开程序失败"), TEXT("错误"), MB_OK);
 		return;
 	}
+
+
+	//获取dll路径
+	DWORD strSize = 255;
+	TCHAR DllFile[255] = {0};
+	GetWindowText(GetDlgItem(hwndDlg, IDC_TEXT_DLLPATH), DllFile, 255);
+	char dllFileNew[255] = { 0 };
+	TcharToChar(DllFile, dllFileNew);
+
 	//3)	在目标程序进程中为DLL文件路径字符串申请内存空间（VirtualAllocEx）。
-	LPVOID allocAddress = VirtualAllocEx(hProcess, NULL, strSize, MEM_COMMIT, PAGE_READWRITE);
+	LPVOID allocAddress = VirtualAllocEx(hProcess, NULL, sizeof(dllFileNew), MEM_COMMIT, PAGE_READWRITE);
 	if (NULL == allocAddress)
 	{
 		MessageBox(NULL, TEXT("分配内存空间失败"), TEXT("错误"), MB_OK);
@@ -117,7 +127,7 @@ VOID InjectDll(HWND   hwndDlg) {
 	}
 
 	//4)	把DLL文件路径字符串写入到申请的内存中（WriteProcessMemory）
-	BOOL result = WriteProcessMemory(hProcess, allocAddress, DllFileName, strSize, NULL);
+	BOOL result = WriteProcessMemory(hProcess, allocAddress, dllFileNew, sizeof(dllFileNew), NULL);
 	if (result == FALSE)
 	{
 		MessageBox(NULL, TEXT("写入内存失败"), TEXT("错误"), MB_OK);
@@ -288,7 +298,7 @@ void AddText(HWND hwnd, PCTSTR pszFormat, ...) {
 	va_list argList;
 	va_start(argList, pszFormat);
 
-	TCHAR sz[7 * 1024];
+	TCHAR sz[20 * 1024];
 	Edit_GetText(hwnd, sz, _countof(sz));
 	_vstprintf_s(_tcschr(sz, TEXT('\0')), _countof(sz) - _tcslen(sz), pszFormat, argList);
 	Edit_SetText(hwnd, sz);
@@ -354,4 +364,16 @@ int HowManyHeaps(HANDLE m_hSnapshot) {
 	for (BOOL fOk = Heap32ListFirst(m_hSnapshot, &hl); fOk; fOk = Heap32ListNext(m_hSnapshot, &hl))
 		nHowManyHeaps++;
 	return(nHowManyHeaps);
+}
+
+
+//将TCHAR转为char   
+//*tchar是TCHAR类型指针，*_char是char类型指针   
+VOID TcharToChar(const TCHAR* tchar, char* _char)
+{
+	int iLength;
+	//获取字节长度   
+	iLength = WideCharToMultiByte(CP_ACP, 0, tchar, -1, NULL, 0, NULL, NULL);
+	//将tchar值赋给_char    
+	WideCharToMultiByte(CP_ACP, 0, tchar, -1, _char, iLength, NULL, NULL);
 }

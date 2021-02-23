@@ -8,7 +8,7 @@
 #define BTN_INFO                        1003
 #define IDC_DLL_INFO                    1004
 #define IDC_EDIT2                       1007
-#define IDC_COMBO4                      1012
+#define IDC_TEXT_DLLPATH                1007
 #define LIST_PROCESSLIST                1012
 
 // Next default values for new objects

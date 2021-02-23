@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InjectDllTools", "InjectDll
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WxUserInfo", "WxUserInfo\WxUserInfo.vcxproj", "{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WxMsgReceive", "WxMsgReceive\WxMsgReceive.vcxproj", "{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -53,6 +55,14 @@ Global
 		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x64.Build.0 = Release|x64
 		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x86.ActiveCfg = Release|Win32
 		{96CDBDE3-4FCF-4150-8D9A-97881F17CAAA}.Release|x86.Build.0 = Release|Win32
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Debug|x64.ActiveCfg = Debug|x64
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Debug|x64.Build.0 = Debug|x64
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Debug|x86.ActiveCfg = Debug|Win32
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Debug|x86.Build.0 = Debug|Win32
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Release|x64.ActiveCfg = Release|x64
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Release|x64.Build.0 = Release|x64
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Release|x86.ActiveCfg = Release|Win32
+		{A1D0A298-3CB5-4D57-B270-EC88EE01BB66}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
