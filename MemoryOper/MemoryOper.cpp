@@ -19,11 +19,13 @@ void PrintAddress(HANDLE hProcess, DWORD baseAddress);
 BOOL ListProcessModules(DWORD dwPID);
 DWORD GetWxMemoryInt(HANDLE hProcess, DWORD baseAddress);
 VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize);
-
 VOID GetRoomInfo(DWORD roomAddress, DWORD log);
-DWORD addressOffsetPoint = 0x161CF54;
-DWORD address1 = 0x7C8;
-DWORD address2 = 0x80;
+void CharToTchar(const char* _char, TCHAR* tchar);
+
+
+DWORD addressOffsetPoint = 0x1886B38;
+DWORD address1 = 0x840;
+DWORD address2 = 0x88;
 
 DWORD weChatBaseAdress = 0;
 
@@ -92,7 +94,7 @@ int main()
 	_tprintf(TEXT("headerAddress: 0x%08X \n"), headerAddress);
 	//节点数量
 	DWORD contractCount = GetWxMemoryInt(hProcess, linkPointer+4);
-	_tprintf(TEXT("contractCount: 0x%08X \n"), contractCount);
+	_tprintf(TEXT("Number: %d \n"), contractCount);
 	nodeAddressList.push_front(headerAddress);
 	nodeAddressVector.push_back(headerAddress);
 	 
@@ -147,7 +149,8 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	//群号
 	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x10), GetWxMemoryInt(hProcess, roomAddress + 0x14));
 	//群主
-	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x68),GetWxMemoryInt(hProcess, roomAddress + 0x6c));
+	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x6C),GetWxMemoryInt(hProcess, roomAddress + 0x70));
+
 
 	GetRoomInfo(header1, log);
 	GetRoomInfo(header2, log);
@@ -158,18 +161,10 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 
 VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize = 4) {
 
-	BYTE content[100] = { 0 };
+	TCHAR content[100] = { 0 };
 	ReadProcessMemory(hProcess, (LPVOID)baseAddress, content, nSize*2, 0);
 
-	for (int i = 0; i < 50;i++) {
-		if (content[i] == 0) {
-			continue;
-		}
-		cout << content[i];
-	}
-	cout << endl;
-	
-
+	_tprintf(TEXT("%s \n"), content);
 }
 
 
@@ -248,3 +243,10 @@ void PrintAddress(HANDLE hProcess, DWORD baseAddress) {
 }
 
 
+void CharToTchar(const char* _char, TCHAR* tchar)
+{
+	int iLength;
+
+	iLength = MultiByteToWideChar(CP_ACP, 0, _char, strlen(_char) + 1, NULL, 0);
+	MultiByteToWideChar(CP_ACP, 0, _char, strlen(_char) + 1, tchar, iLength);
+}

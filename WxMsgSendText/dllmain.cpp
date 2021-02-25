@@ -143,7 +143,7 @@ string Dec2Hex(DWORD i)
 VOID SentTextMessage(HWND hwndDlg)
 {
 	//6CED0E62    E8 89992200     call WeChatWi.6D0FA7F0; 发送消息断点 
-	DWORD callAddress_SendText = wxBaseAddress + 0x3A0C20;
+	DWORD callFunAddr = wxBaseAddress + 0x3A0C20;
 
 	//组装wxid数据
 	WCHAR wxid[50];
@@ -185,20 +185,16 @@ VOID SentTextMessage(HWND hwndDlg)
 	__asm
 	{
 		push 0x1
-
-		// 这儿放置被at的微信ID
 		mov edi, 0x0
 		push edi
 
-		//微信消息内容
 		mov ebx, asmMsg
 		push ebx
 
 		mov edx, asmWxid
 		lea ecx, buff
 
-		//调用函数
-		call callAddress_SendText
+		call callFunAddr
 		add esp, 0xC
 	}
 
@@ -232,11 +228,9 @@ VOID SentAtTextMessage(HWND hwndDlg)
 	string text = "";
 
 	//6841A1CB    E8 506A2900     call WeChatWi.686B0C20
-	DWORD callAddress_SendText = wxBaseAddress + g_callAddr;
+	DWORD callFunAddr = wxBaseAddress + g_callAddr;
 
-	text = "Call地址:";
-	text.append(Dec2Hex(callAddress_SendText));
-	OutputDebugString(String2LPCWSTR(text));
+
 
 	//组装wxid数据
 	WCHAR wxid[50];
@@ -302,26 +296,6 @@ VOID SentAtTextMessage(HWND hwndDlg)
 	__asm
 	{
 
-		//lea edx, asmWxid
-
-		////传递参数
-		//push 0x1
-
-		//lea eax, roomAt
-		//push eax
-
-		////微信消息内容
-		//lea ebx, asmMsg
-
-		//push ebx
-		//lea ecx, buff
-
-		////调用函数
-		//call callAddress_SendText
-
-		////平衡堆栈
-		//add esp, 0xC
-
 		push 0x1
 
 		// 这儿放置被at的微信ID
@@ -336,7 +310,7 @@ VOID SentAtTextMessage(HWND hwndDlg)
 		lea ecx, buff
 
 		//调用函数
-		call callAddress_SendText
+		call callFunAddr
 		// 因为前面push了3个参数，堆栈要平衡
 		add esp, 0xC
 	}
