@@ -12,6 +12,8 @@
 
 using namespace std;
 
+//3.1.0.72
+
 //声明函数
 VOID ShowDemoUI(HMODULE hModule);
 INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
@@ -23,8 +25,8 @@ WCHAR* CharToWChar(char* s);
 
 //定义变量
 DWORD wxBaseAddress = 0;
-DWORD g_callAddr = 0x3A0C20;
-
+DWORD g_callAddr = 0x3A0CA0;
+const int g_msgBuffer = 0x5A8;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -140,37 +142,36 @@ string Dec2Hex(DWORD i)
 }
 
 
-VOID SentTextMessage(HWND hwndDlg)
+__declspec(naked) VOID SentTextMessage(HWND hwndDlg)
 {
-	//6CED0E62    E8 89992200     call WeChatWi.6D0FA7F0; 发送消息断点 
-	DWORD callFunAddr = wxBaseAddress + 0x3A0C20;
+	//call WeChatWi.6D0FA7F0; 发送消息断点 ,6D0FA7F0 = wxBaseAddress + g_callAddr
+	DWORD callFunAddr = wxBaseAddress + g_callAddr;
 
 	//组装wxid数据
 	WCHAR wxid[50];
 	UINT uINT = GetDlgItemText(hwndDlg, INPUT_WXID, wxid, 50);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
+	//if (uINT == 0)
+	//{
+	//	MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
+	//	return;
+	//}
 
 	StructWxid structWxid = { 0 };
 	structWxid.pWxid = wxid;
 	structWxid.length = wcslen(wxid);
 	structWxid.maxLength = wcslen(wxid) * 2;
 
-	//structWxid.Init();
 	//取wxid的地址
 	DWORD* asmWxid = (DWORD*)&structWxid.pWxid;
 
 	//组装发送的文本数据
 	WCHAR wxMsg[1024];
 	uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsg, 1024);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写要发送的文本", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
+	//if (uINT == 0)
+	//{
+	//	MessageBoxA(NULL, "请填写要发送的文本", "错误", MB_OK | MB_ICONERROR);
+	//	return;
+	//}
 
 	StructWxid structMessage = { 0 };
 	structMessage.pWxid = wxMsg;
@@ -179,7 +180,7 @@ VOID SentTextMessage(HWND hwndDlg)
 	DWORD* asmMsg = (DWORD*)&structMessage.pWxid;
 
 	//定义一个缓冲区
-	BYTE buff[0x5A8] = { 0 };
+	BYTE buff[g_msgBuffer] = { 0 };
 
 	//执行汇编调用
 	__asm
@@ -199,125 +200,6 @@ VOID SentTextMessage(HWND hwndDlg)
 	}
 
 }
-
-class ROOM_AT
-{
-public:
-	DWORD at_WxidList = 0;
-	DWORD at_end1 = 0;
-	DWORD at_end2 = 0;
-};
-
-class  TEXT_WXID
-{
-public:
-	wchar_t* pWxid = nullptr;
-	DWORD length = 0;
-	DWORD maxLength = 0;
-	DWORD fill1 = 0;
-	DWORD fill2 = 0;
-};
-
-
-/**
- * at没调试成功
- */
-VOID SentAtTextMessage(HWND hwndDlg)
-{
-	OutputDebugString(L"in SentAtTextMessage...");
-	string text = "";
-
-	//6841A1CB    E8 506A2900     call WeChatWi.686B0C20
-	DWORD callFunAddr = wxBaseAddress + g_callAddr;
-
-
-
-	//组装wxid数据
-	WCHAR wxid[50];
-	UINT uINT = GetDlgItemText(hwndDlg, INPUT_WXID, wxid, 50);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
-
-
-	StructWxid structWxid = { 0 };
-	structWxid.pWxid = wxid;
-	structWxid.length = wcslen(wxid);
-	structWxid.maxLength = wcslen(wxid) * 2;
-
-	text = "微信ID长度:";
-	text.append(Dec2Hex(structWxid.length));
-	OutputDebugString(String2LPCWSTR(text));
-
-	//structWxid.Init();
-	//取wxid的地址
-	DWORD* asmWxid = (DWORD*)&structWxid.pWxid;
-
-
-	//组装发送的文本数据
-	WCHAR wxMsg[1024];
-	uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsg, 1024);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写要发送的文本", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
-
-	StructWxid structMessage = { 0 };
-	structMessage.pWxid = wxMsg;
-	structMessage.length = wcslen(wxMsg);
-	structMessage.maxLength = wcslen(wxMsg) * 2;
-	DWORD* asmMsg = (DWORD*)&structMessage.pWxid;
-
-	// 获取at消息
-	WCHAR wxidAt2[50];
-	UINT uINTAt = GetDlgItemText(hwndDlg, INPUT_AT, wxidAt2, 50);
-
-	TEXT_WXID wxAtId;
-	wxAtId.pWxid = wxidAt2;
-	wxAtId.length = wcslen(wxidAt2);
-	wxAtId.maxLength = wcslen(wxidAt2) * 2;
-	wxAtId.fill1 = 0;
-	wxAtId.fill2 = 0;
-
-	ROOM_AT roomAt;
-	roomAt.at_WxidList = (DWORD)&wxAtId.pWxid;
-	roomAt.at_end1 = roomAt.at_WxidList + 5 * 4;
-	roomAt.at_end2 = roomAt.at_end1;
-
-	//定义一个缓冲区
-	BYTE buff[0x87C] = { 0 };
-
-	OutputDebugString(L"before asm");
-
-	//执行汇编调用
-	__asm
-	{
-
-		push 0x1
-
-		// 这儿放置被at的微信ID
-		mov edi, roomAt
-		push edi
-
-		//微信消息内容
-		mov ebx, asmMsg
-		push ebx
-
-		mov edx, asmWxid
-		lea ecx, buff
-
-		//调用函数
-		call callFunAddr
-		// 因为前面push了3个参数，堆栈要平衡
-		add esp, 0xC
-	}
-
-}
-
-
 
 //把string 转换为 LPCWSTR
 LPCWSTR String2LPCWSTR(string text)

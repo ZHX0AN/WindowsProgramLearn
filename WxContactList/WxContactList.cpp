@@ -164,16 +164,16 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 
 VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize = 4) {
 
-	BYTE content[100] = { 0 };
-	//ReadProcessMemory(hProcess, (LPVOID)baseAddress, content, nSize * 2, 0);
-	ReadProcessMemory(hProcess, (LPVOID)baseAddress, content,1000, 0);
-	WCHAR* ch = (WCHAR*)content;
-	cout << WcharToString(ch) << endl;
+	//BYTE content[100] = { 0 };
+	////ReadProcessMemory(hProcess, (LPVOID)baseAddress, content, nSize * 2, 0);
+	//ReadProcessMemory(hProcess, (LPVOID)baseAddress, content,1000, 0);
+	//WCHAR* ch = (WCHAR*)content;
+	//cout << WcharToString(ch) << endl;
 
-	//TCHAR content[10000] = { 0 };
-	//ReadProcessMemory(hProcess, (LPVOID)baseAddress, content, nSize * 2, 0);
+	TCHAR content[10000] = { 0 };
+	ReadProcessMemory(hProcess, (LPVOID)baseAddress, content,10000, 0);
 
-	//_tprintf(TEXT("%s \n"), content);
+	_tprintf(TEXT("%s \n"), content);
 }
 
 

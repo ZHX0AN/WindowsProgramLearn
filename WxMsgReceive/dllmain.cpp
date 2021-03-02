@@ -12,6 +12,7 @@
 
 #pragma comment(lib, "Version.lib")
 
+//3.1.0.72
 
 using namespace std;
 
