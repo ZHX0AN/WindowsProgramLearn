@@ -20,12 +20,13 @@ using namespace std;
 VOID ShowDemoUI(HMODULE hModule);
 VOID HookWx();
 VOID UnHookWx();
-VOID RecieveMsg();
-VOID RecieveMsgHook();
+VOID RecieveMsg(DWORD dEsp);
+VOID RecieveMsgHook(DWORD dEsp);
 LPCWSTR GetMsgByAddress(DWORD memAddress);
 string Dec2Hex(DWORD i);
 LPCWSTR String2LPCWSTR(string text);
 wstring String2Wstring(string str);
+VOID UnLoadMyself();
 
 //定义变量
 DWORD wxBaseAddress = 0;
@@ -36,17 +37,17 @@ DWORD g_hookAddr = 0;
 //跳回地址
 DWORD jumBackAddress = 0;
 //我们要提取的寄存器内容
-DWORD r_esp = 0;
+//DWORD r_esp = 0;
 
-const string wxVersoin = "3.1.0.67";
+const string wxVersoin = "3.1.0.62";
 //我自己的微信ID
 string myWxId = "";
 
 CHAR originalCode[5] = { 0 };
 
-DWORD g_moveAddr = 0x69CD3C50;
-DWORD g_hookOffsetAddr = 0x3CD505;
-DWORD g_jumBackOffsetAddr = 0x3CD50B;
+DWORD g_moveAddr = 0x66553C50;
+DWORD g_hookOffsetAddr = 0x3CD5A5;
+DWORD g_jumBackOffsetAddr = 0x3CD5AB;
 DWORD g_jumBackAddr = 0;
 
 
@@ -90,7 +91,9 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 			//SetWindowText(hFileHelper, TEXT("停止准备接收微信消息......"));
 			break;
 		}
-
+		else if (wParam == IDC_BTN_UNLOAD) {
+			UnLoadMyself();
+		}
 
 		break;
 	default:
@@ -154,8 +157,8 @@ VOID HookWx()
 	//新跳转指令中的数据=跳转的地址-原地址（HOOK的地址）-跳转指令的长度
 	*(DWORD*)&jmpCode[1] = (DWORD)RecieveMsgHook - hookAddress - 5;
 
-	////保存当前位置的指令,在unhook的时候使用。
-	//ReadProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, originalCode, 5, 0);
+	//保存当前位置的指令,在unhook的时候使用。
+	ReadProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, originalCode, 5, 0);
 
 	//覆盖指令 B9 E8CF895C //mov ecx,0x5C89CFE8
 	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, jmpCode, 5, 0);
@@ -169,7 +172,7 @@ VOID UnHookWx()
 		//恢复指令
 
 		//恢复指令的地址
-		int hookAddress = wxBaseAddress + 0x354AA3;
+		int hookAddress = wxBaseAddress + g_hookOffsetAddr;
 
 		//恢复指令
 		WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, originalCode, 5, 0);
@@ -179,7 +182,7 @@ VOID UnHookWx()
 }
 
 //跳转到这里，让我们自己处理消息
-__declspec(naked) VOID RecieveMsgHook()
+__declspec(naked) VOID RecieveMsgHook(DWORD dEsp)
 {
 
 	__asm
@@ -189,7 +192,11 @@ __declspec(naked) VOID RecieveMsgHook()
 		push edi
 
 		//提取esp寄存器内容，放在一个变量中
-		mov r_esp, esp
+
+	    //这里使用全局变量 r_esp，将导致丢失消息，原因：多线程情况下，新数据覆盖旧数据
+		//在这里，可以将esp直接压入堆栈(esp变动多)，然后在RecieveMsg函数中进行计算
+		//在这里，可以将ebp直接压入堆栈(ebp变动少)，然后在RecieveMsg函数中进行计算
+		mov dEsp, esp
 
 		//保存寄存器
 		pushad
@@ -197,7 +204,7 @@ __declspec(naked) VOID RecieveMsgHook()
 	}
 
 	//调用接收消息的函数
-	RecieveMsg();
+	RecieveMsg(dEsp);
 
 	
 	//恢复现场
@@ -211,31 +218,35 @@ __declspec(naked) VOID RecieveMsgHook()
 	}
 }
 
-VOID RecieveMsg()
+VOID RecieveMsg(DWORD dEsp)
 {
 
 
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
-	//发送人，好友或群
+	//发送人，好友或群ID
 	DWORD friendOffset = 0x40;
 	//群消息，消息发送者
 	DWORD roomMsgSenderOffset = 0x164;
 	//消息
 	DWORD msgOffset = 0x68;
-	//at好友，这儿用来判断是群消息还是好友消息
+
+	//好友消息：<msgsource />
+	//群消息: 01023B78  <msgsource>..<silence>0</silence>..<membercount>2</membercount> < / msgsource>
+	//群at消息: <msgsource>..<atuserlist>wxid_4sy2barbyny712</atuserlist>..<silence>0</silence>..<membercount>2</membercount>.</msgsource>
 	DWORD atFriendOffst = 0x1b8;
 
+	//610069e565280afcd67ec1edfef1c61d
 	DWORD unknown1 = 0x178;
 
-
-
+	//文件存储路径：wxid_4sy2barbyny712\FileStorage\File\2021-03\工作簿1(1).xlsx
+	DWORD filePathOffset = 0x1A0;
 
 	wstring receivedMessage = TEXT("");
 	BOOL isFriendMsg = FALSE;
+	
 	//[[esp]]
-	//信息块位置
-	DWORD** msgAddress = (DWORD**)r_esp;
+	DWORD** msgAddress = (DWORD**)dEsp;
 
 	//消息类型[[esp]]+0x30
 	//[01文字] [03图片] [31转账XML信息] [22语音消息] [02B视频信息]
@@ -246,9 +257,10 @@ VOID RecieveMsg()
 	case 0x01:
 		receivedMessage.append(TEXT("text"));
 		break;
-		//case 0x03:
-		//	receivedMessage.append(TEXT("pic"));
-		//	break;
+
+	case 0x03:
+		receivedMessage.append(TEXT("pic"));
+		break;
 
 		//case 0x22:
 		//	receivedMessage.append(TEXT("voice"));
@@ -272,13 +284,14 @@ VOID RecieveMsg()
 		//case 0x30:
 		//	receivedMessage.append(TEXT("位置"));
 		//	break;
-		//case 0x31:
-		//	//共享实时位置
-		//	//文件
-		//	//转账
-		//	//链接
-		//	//receivedMessage.append(TEXT("共享实时位置、文件、转账、链接"));
-		//	break;
+		case 0x31:
+			//共享实时位置
+			//文件
+			//转账
+			//链接
+
+			receivedMessage.append(TEXT("共享实时位置、文件、转账、链接"));
+			break;
 		//case 0x32:
 		//	receivedMessage.append(TEXT("VOIPMSG"));
 		//	break;
@@ -362,8 +375,12 @@ VOID RecieveMsg()
 		.append(TEXT("\r\n\r\n"));
 
 
+	receivedMessage.append(TEXT("文件存储路径: \r\n"))
+		.append(GetMsgByAddress(**msgAddress + filePathOffset))
+		.append(TEXT("\r\n\r\n"));
+
 	receivedMessage.append(TEXT("unkunow:\r\n"))
-		.append(GetMsgByAddress(**msgAddress + 0x178))
+		.append(GetMsgByAddress(**msgAddress + unknown1))
 		.append(TEXT("\r\n\r\n"));
 
 
@@ -442,4 +459,25 @@ string Dec2Hex(DWORD i)
 	ioss >> s_temp;
 
 	return "0x" + s_temp;
+}
+
+
+//卸载自己
+VOID UnLoadMyself()
+{
+	HMODULE hModule = NULL;
+
+	//GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS 会增加引用计数
+	//因此，后面还需执行一次FreeLibrary
+	//直接使用本函数（UnInject）地址来定位本模块
+	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPWSTR)&UnLoadMyself, &hModule);
+
+	if (hModule != 0)
+	{
+		//减少一次引用计数
+		FreeLibrary(hModule);
+
+		//从内存中卸载
+		FreeLibraryAndExitThread(hModule, 0);
+	}
 }

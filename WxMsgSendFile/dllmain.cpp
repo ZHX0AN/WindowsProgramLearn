@@ -218,7 +218,7 @@ VOID SentTextMessage(HWND hwndDlg)
 		sub esp, 0x14
 		mov ecx, esp
 		push pFilePath
-		call callAddr1//这里崩了
+		call callAddr1
 
 		sub esp, 0x14
 		mov ecx, esp
@@ -232,7 +232,43 @@ VOID SentTextMessage(HWND hwndDlg)
 
 		mov ecx, eax
 		call callAddr4
-			popad
+		popad
+
+
+
+
+
+			//pushad
+
+			//push dword ptr ss : [ebp - 0x6C]
+			//sub esp, 0x14
+			//mov ecx, esp
+			//push - 0x1
+			//push paramAddr0
+			//call callAddr0
+
+			//sub esp, 0x14
+			//mov ecx, esp
+			//push pFilePath
+			//push ebx
+			//call callAddr1
+
+			//sub esp, 0x14
+			//mov ecx, esp
+			//push pWxid
+			//call callAddr2
+
+			//lea eax, buff
+			//push eax
+			//call callAddr3
+
+			//mov ecx, eax
+			//call callAddr4
+
+			//popad
+
+
+
 
 	}
 

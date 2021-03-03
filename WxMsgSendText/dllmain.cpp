@@ -18,7 +18,6 @@ using namespace std;
 VOID ShowDemoUI(HMODULE hModule);
 INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 void SentTextMessage(HWND hwndDlg);
-void SentAtTextMessage(HWND hwndDlg);
 LPCWSTR String2LPCWSTR(string text);
 string Dec2Hex(DWORD i);
 WCHAR* CharToWChar(char* s);
@@ -91,7 +90,7 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		if (wParam == BTN_SEND_AT)
 		{
 			OutputDebugString(TEXT("发送at消息 BTN_SEND_AT"));
-			SentAtTextMessage(hwndDlg);
+			//SentAtTextMessage(hwndDlg);
 		}
 
 		break;
@@ -142,7 +141,7 @@ string Dec2Hex(DWORD i)
 }
 
 
-__declspec(naked) VOID SentTextMessage(HWND hwndDlg)
+ VOID SentTextMessage(HWND hwndDlg)
 {
 	//call WeChatWi.6D0FA7F0; 发送消息断点 ,6D0FA7F0 = wxBaseAddress + g_callAddr
 	DWORD callFunAddr = wxBaseAddress + g_callAddr;
