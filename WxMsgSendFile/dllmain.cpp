@@ -26,6 +26,7 @@ VOID UnLoadMyself();
 //定义变量
 DWORD wxBaseAddress = 0;
 
+BOOL flag = true;
 
 /**
  * 发送文件
@@ -38,15 +39,8 @@ DWORD wxBaseAddress = 0;
 #define SEND_FILE_ADDR3 0x66CB0
 #define SEND_FILE_ADDR4 0x2B7600
 
-DWORD C_EAX;
-DWORD C_EBX;
-DWORD C_ECX;
-DWORD C_EDX;
+#define BUFF_SIZE 0x350
 
-DWORD C_ESI;
-DWORD C_EDI;
-DWORD C_EBP;
-DWORD C_ESP;
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
@@ -111,7 +105,29 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		//发送消息
 		if (wParam == BTN_SEND)
 		{
+			//int i = 0;
+			//DWORD num  =0 ;
+			//WCHAR numString[20] = { 0 };
+			//UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, numString, 1024);
+
+			//if (uINT == 0)
+			//{
+			//	MessageBoxA(NULL, "请填写循环次数", "错误", MB_OK | MB_ICONERROR);
+			//	return FALSE;
+			//}
+
+			//for (i = 0; i < 10; i++) {
+			//
+			//	SentTextMessage(hwndDlg);
+			//	Sleep(20000);
+
+			//	string threadLog = "threadLog：\t";
+			//	threadLog.append(Dec2Hex((DWORD)i));
+			//	OutputDebugString(String2LPCWSTR(threadLog));
+			//}
+
 			SentTextMessage(hwndDlg);
+			
 		}
 		else if(wParam == IDC_BTN_UNLOAD) {
 			UnLoadMyself();
@@ -146,16 +162,6 @@ VOID SentTextMessage(HWND hwndDlg)
 		int maxLen = 0;
 		char file[0x18] = { 0 };
 	};
-	//nani的那你地址不对啊
-
-
-//#define SEND_FILE_PARAM 0x1550368
-//#define SEND_FILE_ADDR0 0x574180
-//打开登录附加一下
-//#define SEND_FILE_ADDR1 0x5741C0
-//#define SEND_FILE_ADDR2 0x5741C0
-//#define SEND_FILE_ADDR3 0x66CB0
-//#define SEND_FILE_ADDR4 0x2B7600
 
 
 	//构造需要的地址
@@ -168,25 +174,29 @@ VOID SentTextMessage(HWND hwndDlg)
 	DWORD callAddr4 = wxBaseAddress + SEND_FILE_ADDR4;	//发送消息
 	
 
-	char buff[0x45C] = { 0 };
-
 	//构造需要的数据
 		//组装wxid数据
-	WCHAR wxid[50] = TEXT("filehelper");
-	//UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_WXID, wxid, 50);
-	//if (uINT == 0)
-	//{
-	//	MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
-	//	return;
-	//}
+	WCHAR wxid[50] = { 0 };
+	UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_WXID, wxid, 50);
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
 	WxidStr wxidStruct = { 0 };
 	wxidStruct.str = wxid;
 	wxidStruct.strLen = wcslen(wxid);
 	wxidStruct.maxLen = wcslen(wxid) * 2;
 
 
-	WCHAR wxMsg[1024] = TEXT("C:\\222.xlsx");
-	//uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, wxMsg, 1024);
+	WCHAR wxMsg[1024] = { 0 };
+	uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, wxMsg, 1024);
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写文件路径", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
+
 
 	filePathStr filePathStruct = { 0 };
 	filePathStruct.str = wxMsg;
@@ -198,17 +208,27 @@ VOID SentTextMessage(HWND hwndDlg)
 	char* pFilePath = (char*)&filePathStruct.str;
 	char* pWxid = (char*)&wxidStruct.str;
 
+	
+	char buff[BUFF_SIZE] = { 0 };
+	char buff2[4] = { 0 };
+
+	DWORD addr1 = (DWORD)buff2;
+	DWORD pAddr1 = (DWORD)&addr1;
+
+	WCHAR wxid2[50] = TEXT("2222222222222222");
+
 	__asm {
-
-
 		pushad
+
+		//push dword ptr ss:[ebp-0x6C]
 		sub esp, 0x14
 		mov ecx,esp
-		lea eax, buff
+		lea eax, buff2
 		push eax
 		call callAddr1
+		push pAddr1;
 
-		push 0x1;
+
 		sub esp, 0x14
 		mov ecx, esp
 		push - 0x1
@@ -235,44 +255,38 @@ VOID SentTextMessage(HWND hwndDlg)
 		popad
 
 
+		//pushad
 
+		//lea eax, buff2
+		//push eax
+		//sub esp, 0x14
+		//mov ecx, esp
+		//push - 0x1
+		//push paramAddr0
+		//call callAddr0
 
+		//sub esp, 0x14
+		//mov ecx, esp
+		//push pFilePath
+		//call callAddr1
 
-			//pushad
+		//sub esp, 0x14
+		//mov ecx, esp
+		//lea eax, wxidStruct
+		//push eax
+		//call callAddr2
 
-			//push dword ptr ss : [ebp - 0x6C]
-			//sub esp, 0x14
-			//mov ecx, esp
-			//push - 0x1
-			//push paramAddr0
-			//call callAddr0
+		//lea eax, buff
+		//push eax
+		//call callAddr3
 
-			//sub esp, 0x14
-			//mov ecx, esp
-			//push pFilePath
-			//push ebx
-			//call callAddr1
+		//mov ecx, eax
+		//call callAddr4
 
-			//sub esp, 0x14
-			//mov ecx, esp
-			//push pWxid
-			//call callAddr2
-
-			//lea eax, buff
-			//push eax
-			//call callAddr3
-
-			//mov ecx, eax
-			//call callAddr4
-
-			//popad
-
-
-
-
+		//popad
 	}
 
-	OutputDebugString(String2LPCWSTR("end asm....."));
+	//OutputDebugString(String2LPCWSTR("end asm....."));
 }
 
 

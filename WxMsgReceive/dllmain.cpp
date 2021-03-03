@@ -84,9 +84,7 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		//停止接收
 		if (wParam == IDC_BTN_STOP)
 		{
-			//OutputDebugString(TEXT("停止接收按钮被点击"));
-			//UnHookWx();
-
+			UnHookWx();
 			//HWND hFileHelper = GetDlgItem(hwndDlg, IDC_MSG);
 			//SetWindowText(hFileHelper, TEXT("停止准备接收微信消息......"));
 			break;
