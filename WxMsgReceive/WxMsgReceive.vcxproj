@@ -24,6 +24,7 @@
     <ProjectGuid>{a1d0a298-3cb5-4d57-b270-ec88ee01bb66}</ProjectGuid>
     <RootNamespace>WxMsgReceive</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>02-WxMsgReceive</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -24,6 +24,7 @@
     <ProjectGuid>{5a58e726-aef8-4b00-ba04-8579223e1d8e}</ProjectGuid>
     <RootNamespace>WxMsgSendText</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>03-WxMsgSendText</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

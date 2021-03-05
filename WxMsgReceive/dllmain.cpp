@@ -39,7 +39,7 @@ DWORD jumBackAddress = 0;
 //我们要提取的寄存器内容
 //DWORD r_esp = 0;
 
-const string wxVersoin = "3.1.0.62";
+const string wxVersoin = "3.1.0.72";
 //我自己的微信ID
 string myWxId = "";
 

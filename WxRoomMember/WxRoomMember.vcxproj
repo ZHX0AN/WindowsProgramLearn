@@ -24,6 +24,7 @@
     <ProjectGuid>{7d511ef1-a412-4a92-b333-f5ea493773d3}</ProjectGuid>
     <RootNamespace>WxRoomMember</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>08-WxRoomMember</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

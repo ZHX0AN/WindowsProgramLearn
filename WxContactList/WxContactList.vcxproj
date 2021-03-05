@@ -24,6 +24,7 @@
     <ProjectGuid>{83eae982-a646-415c-ba0b-994982314fbb}</ProjectGuid>
     <RootNamespace>WxContactList</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>06-WxContactList</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

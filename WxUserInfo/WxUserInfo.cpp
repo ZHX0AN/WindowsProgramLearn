@@ -13,6 +13,7 @@
 
 HWND g_hwndDialogDetail;
 
+// 3.1.0.72
 
 VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 VOID GetUserInfo(HWND hwnd);

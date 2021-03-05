@@ -12,6 +12,8 @@
 #include <list>
 #include <vector>
 
+// 3.1.0.72
+
 using namespace std;
 const wchar_t* weChatName = L"WeChat.exe";
 HANDLE hProcess;

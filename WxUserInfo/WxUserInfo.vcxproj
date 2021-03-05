@@ -24,6 +24,7 @@
     <ProjectGuid>{96cdbde3-4fcf-4150-8d9a-97881f17caaa}</ProjectGuid>
     <RootNamespace>WxUserInfo</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>05-WxUserInfo</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
