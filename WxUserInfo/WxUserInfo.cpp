@@ -42,6 +42,16 @@ DWORD g_regionProvince = 0x18A36E8;
 DWORD g_regionCity = 0x18A3700;
 DWORD g_regionCountry = 0x18A37D8;
 
+
+//微信ID的结构体
+struct UserInfoStructRPC
+{
+	BYTE* wxid;
+	TCHAR* nickname;
+	BYTE* avatar;
+};
+
+
 DWORD bytesToInt(BYTE* bytes)
 {
 	DWORD a = bytes[0] & 0xFF;
@@ -127,6 +137,8 @@ VOID GetUserInfo(HWND hwnd) {
 
 }
 
+
+
 BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 
 	HANDLE hModuleSnap = INVALID_HANDLE_VALUE;
@@ -162,15 +174,33 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 	} while (Module32Next(hModuleSnap, &me32));
 
 
+	UserInfoStructRPC userInfo = {0,0,0};
+
 	//wxid
 	BYTE pWxIdAddr[4] = {0};
 	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_wxIdAddr), pWxIdAddr, 4, 0);
 	DWORD wxIdAddr = bytesToInt(pWxIdAddr);
 	BYTE wxId[50] = { 0 };
 	ReadProcessMemory(hProcess, (LPVOID)wxIdAddr, wxId, 50, 0);
+	userInfo.wxid = wxId;
+
+	//ReadProcessMemory(hProcess, (LPVOID)userInfo.wxid, wxId, 50, 0);
+
 	TCHAR tempBuf[200] = { 0 };
 	int nRet = MultiByteToWideChar(CP_ACP, 0, (char*)wxId, 100, tempBuf, 200);
 	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信ID: %s\r\n"), tempBuf);
+
+	
+
+	//nickname
+	char name[100] = { 0 };
+	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name, 100, 0);
+
+	TCHAR* content = UTF8ToUnicode(name);
+	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字: %s\r\n"), content);
+
+
+
 
 
 	BYTE phoneNumber[20] = { 0 };
@@ -178,12 +208,6 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 	TCHAR dBuf[30] = {0};
 	nRet = MultiByteToWideChar(CP_ACP, 0, (char*)phoneNumber, 11, dBuf, 30);
 	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("手机号: %s\r\n"), dBuf);
-
-
-	char name[100] = { 0 };
-	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name, 100, 0);
-	TCHAR* content = UTF8ToUnicode(name);
-	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字: %s\r\n"), content);
 
 
 	BYTE phoneType[50] = { 0 };
