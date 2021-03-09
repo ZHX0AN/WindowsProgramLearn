@@ -167,9 +167,9 @@ VOID ThreadSendMessage(HWND   hwndDlg) {
 
 	for (i = 0; i < number; i++) {
 
-		//SentTextMessage(hwndDlg);
+		SentTextMessage(hwndDlg);
 		//SendMessageFile2(hwndDlg);
-		SendMessageFile3(hwndDlg);
+		//SendMessageFile3(hwndDlg);
 		
 		Sleep(timeSecond);
 
@@ -179,7 +179,7 @@ VOID ThreadSendMessage(HWND   hwndDlg) {
 	}
 }
 
-//第一版
+//第一版。正确执行
 VOID SentTextMessage(HWND hwndDlg)
 {
 

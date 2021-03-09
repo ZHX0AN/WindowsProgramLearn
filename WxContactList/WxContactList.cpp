@@ -278,7 +278,7 @@ VOID GetRoomInfo(DWORD roomAddress, rapidjson::Value* pVData) {
 	vUserInfo.AddMember("remark", vRemark, doc.GetAllocator());
 
 	pVData->PushBack(vUserInfo, doc.GetAllocator());
-;	
+
 	GetRoomInfo(header1, pVData);
 	GetRoomInfo(header2, pVData);
 	GetRoomInfo(header3, pVData);
