@@ -176,11 +176,11 @@ string Dec2Hex(DWORD i)
 	//组装wxid数据
 	WCHAR wxid[50];
 	UINT uINT = GetDlgItemText(hwndDlg, INPUT_WXID, wxid, 50);
-	//if (uINT == 0)
-	//{
-	//	MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
-	//	return;
-	//}
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
 
 	StructWxid structWxid = { 0 };
 	structWxid.pWxid = wxid;
@@ -193,11 +193,11 @@ string Dec2Hex(DWORD i)
 	//组装发送的文本数据
 	WCHAR wxMsg[1024];
 	uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsg, 1024);
-	//if (uINT == 0)
-	//{
-	//	MessageBoxA(NULL, "请填写要发送的文本", "错误", MB_OK | MB_ICONERROR);
-	//	return;
-	//}
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写要发送的文本", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
 
 	StructWxid structMessage = { 0 };
 	structMessage.pWxid = wxMsg;
@@ -227,69 +227,91 @@ string Dec2Hex(DWORD i)
 
 }
 
- class TEXT_WX
- {
- public:
-	 wchar_t* pWxid = nullptr;
-	 DWORD length = 0;
-	 DWORD maxLength = 0;
-	 DWORD fill1 = 0;
-	 DWORD fill2 = 0;
-	 wchar_t wxid[1024] = { 0 };
 
-	 TEXT_WX(wstring wsWxid)
-	 {
-		 const wchar_t* temp = wsWxid.c_str();
-		 wmemcpy(wxid, temp, wsWxid.length());
-		 length = wsWxid.length();
-		 maxLength = wsWxid.capacity();
-		 fill1 = 0;
-		 fill2 = 0;
-		 pWxid = wxid;
-	 }
- };
-
- class TEXT_WXID
- {
- public:
-	 wchar_t* pWxid = nullptr;
-	 DWORD length = 0;
-	 DWORD maxLength = 0;
-	 DWORD fill1 = 0;
-	 DWORD fill2 = 0;
- };
-
- class ROOM_AT
- {
- public:
-	 DWORD at_WxidList = 0;
-	 DWORD at_end1 = 0;
-	 DWORD at_end2 = 0;
- };
- 
  VOID SentRoomMessageAt(HWND hwndDlg) {
 
 
 	 HMODULE dllAdress = GetModuleHandleA("WeChatWin.dll");
 	 DWORD callFunAddr = wxBaseAddress + SEND_MSG_HOOK_ADDRESS;
 
-	 //122A8258  13A9A3F0  UNICODE "5847657683@chatroom"
-	 //TEXT_WX wxId(L"5847657683@chatroom");
+
+	 class TEXT_WX
+	 {
+	 public:
+		 wchar_t* pWxid = nullptr;
+		 DWORD length = 0;
+		 DWORD maxLength = 0;
+		 DWORD fill1 = 0;
+		 DWORD fill2 = 0;
+		 wchar_t wxid[1024] = { 0 };
 
 
-	 //122A8258  13A9A3F0  UNICODE "5847657683@chatroom"
-	 TEXT_WX wxId(L"24377562166@chatroom");
+		 TEXT_WX(wstring wsWxid)
+		 {
+			 const wchar_t* temp = wsWxid.c_str();
+			 wmemcpy(wxid, temp, wsWxid.length());
+			 length = wsWxid.length();
+			 maxLength = wsWxid.capacity();
+			 fill1 = 0;
+			 fill2 = 0;
+			 pWxid = wxid;
+		 }
+	 };
 
-	 //14139DEC  14139CF8  UNICODE "@马天佑 hahhaa"
-	 TEXT_WX wxMsg(L"@张zhangjx 22222222");
+	 class TEXT_WXID
+	 {
+	 public:
+		 wchar_t* pWxid = nullptr;
+		 DWORD length = 0;
+		 DWORD maxLength = 0;
+		 DWORD fill1 = 0;
+		 DWORD fill2 = 0;
+	 };
+
+	 class ROOM_AT
+	 {
+	 public:
+		 DWORD at_WxidList = 0;
+		 DWORD at_end1 = 0;
+		 DWORD at_end2 = 0;
+	 };
+
+	 //组装wxid数据
+	 WCHAR wxidDlg[50];
+	 UINT uINT = GetDlgItemText(hwndDlg, INPUT_WXID, wxidDlg, 50);
+	 if (uINT == 0)
+	 {
+		 MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
+		 return;
+	 }
+	 TEXT_WX wxId(wxidDlg);
 
 
-	 //012CE028  13573FA0  UNICODE "wxid_k2d9oduqc9lc22"
-	 WCHAR atIt[50] = L"wxid_4j4mqsuzdgie22";
+
+
+	 //组装发送的文本数据
+	 WCHAR wxMsgDlg[1024];
+	 uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsgDlg, 1024);
+	 if (uINT == 0)
+	 {
+		 MessageBoxA(NULL, "请填写发送的文本数据", "错误", MB_OK | MB_ICONERROR);
+		 return;
+	 }
+	 TEXT_WX wxMsg(wxMsgDlg);
+
+	 
+	 WCHAR wxAtDlg[50];
+	 uINT = GetDlgItemText(hwndDlg, INPUT_AT, wxAtDlg, 50);
+	 if (uINT == 0)
+	 {
+		 MessageBoxA(NULL, "请填写at Wxid", "错误", MB_OK | MB_ICONERROR);
+		 return;
+	 }
+
 	 TEXT_WXID wxAtId;
-	 wxAtId.pWxid = atIt;
-	 wxAtId.length = wcslen(atIt);
-	 wxAtId.maxLength = wcslen(atIt) * 2;
+	 wxAtId.pWxid = wxAtDlg;
+	 wxAtId.length = wcslen(wxAtDlg);
+	 wxAtId.maxLength = wcslen(wxAtDlg) * 2;
 	 wxAtId.fill1 = 0;
 	 wxAtId.fill2 = 0;
 
@@ -310,28 +332,21 @@ string Dec2Hex(DWORD i)
 		 //mov edx, asmWxid
 		 lea edx, wxId
 
-		 //传递参数
 		 push 0x1
 
-		 //mov eax, 0x0
-		 lea eax, roomAt
-		 push eax
+		 lea edi, roomAt
+		 push edi
 
-		 //微信消息内容
-		 //mov ebx, asmMsg
+
 		 lea ebx, wxMsg
-
 		 push ebx
 
 		 lea ecx, buff
 
-		 //调用函数
 		 call callFunAddr
-
-		 //平衡堆栈
 		 add esp, 0xC
-
 	 }
+
 
  }
 
