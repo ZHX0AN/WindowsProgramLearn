@@ -71,11 +71,11 @@ int main()
 
     SendMsgText = (lpSendMsgText)GetProcAddress(hModule, "SendMsgText");
 
-    LPCSTR str2 = "hello111";
-    SendMsgText(str2);
+    //LPCSTR str2 = "hello111";
+    //SendMsgText(str2);
 
 
-    LPCSTR str = "{\"data\": {\"to_wxid\": \"wxid_4j4mqsuzdgie22\",\"content\": \"123aaa\" },\"type\": 1}";
+    LPCSTR str = "{\"data\": {\"to_wxid\": \"wxid_4j4mqsuzdgie22\",\"content\": \"中文\" },\"type\": 1}";
     SendMsgText(str);
 
 

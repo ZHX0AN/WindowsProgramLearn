@@ -45,6 +45,7 @@ int bytesToInt(byte* bytes)
 	return a;
 }
 
+//获取群组信息
 
 int main()
 {
@@ -82,10 +83,10 @@ int main()
 	//std::cout << "hProcess:" << hProcess << endl;
 
 	char content[4] = { 0 };
-	DWORD hookAddress = 0x040D87A0;
 	ListProcessModules(weChatProcessID);
 
 	DWORD linkPointer = GetWxMemoryInt(hProcess, weChatBaseAdress + addressOffsetPoint) + address1 + address2;
+	
 	// 打印链表指针
 	_tprintf(TEXT("LinkPointer: 0x%08X \n"), linkPointer);
 	cout << "-----------------------------------------" << endl;
@@ -147,11 +148,27 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	DWORD header3 = GetWxMemoryInt(hProcess, roomAddress + 8);
 
 
+	//0x10	群号
+	//0x28 群号
+	//0x3c 好友id list
+	//0x6c 群主wxid
+	//0x84 在群中的昵称
+	//
+
 
 	//群号
 	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x10), GetWxMemoryInt(hProcess, roomAddress + 0x14));
 	//群主
 	GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x6C), GetWxMemoryInt(hProcess, roomAddress + 0x70));
+	//在群中的昵称
+	DWORD addrTemp = GetWxMemoryInt(hProcess, roomAddress + 0x84);
+	DWORD size = GetWxMemoryInt(hProcess, roomAddress + 0x88);
+	GetWxMemoryUnicodeString(addrTemp, size);
+
+	char content[10000] = { 0 };
+	DWORD addr = GetWxMemoryInt(hProcess, roomAddress + 0x3C);
+	ReadProcessMemory(hProcess, (LPVOID)addr, content, 10000, 0);
+	printf("%s", content);
 
 
 	GetRoomInfo(header1, log);
@@ -163,7 +180,7 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 
 VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize = 4) {
 
-	TCHAR content[100] = { 0 };
+	char content[100] = { 0 };
 	ReadProcessMemory(hProcess, (LPVOID)baseAddress, content, nSize * 2, 0);
 
 	_tprintf(TEXT("%s \n"), content);

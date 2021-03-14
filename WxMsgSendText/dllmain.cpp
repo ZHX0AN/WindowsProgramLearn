@@ -22,10 +22,23 @@ LPCWSTR String2LPCWSTR(string text);
 string Dec2Hex(DWORD i);
 WCHAR* CharToWChar(char* s);
 
-//定义变量
+VOID SentRoomMessageAt(HWND hwndDlg);
+VOID UnLoadMyself();
+
+
+////定义变量
 DWORD wxBaseAddress = 0;
-DWORD g_callAddr = 0x3A0CA0;
-const int g_msgBuffer = 0x5A8;
+//DWORD g_callAddr = 0x3A0CA0;
+//const int g_msgBuffer = 0x5A8;
+
+
+/**
+ * 发送文本消息
+ */
+#define SEND_MSG_HOOK_ADDRESS 0x3A0CA0	//HOOK消息的内存地址偏移
+#define SEND_MSG_BUFFER 0x5A8	//HOOK消息的内存地址偏移
+
+
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -63,6 +76,14 @@ VOID ShowDemoUI(HMODULE hModule)
 	text.append(Dec2Hex(wxBaseAddress));
 	OutputDebugString(String2LPCWSTR(text));
 
+
+
+	DWORD funAddr = (DWORD)SentRoomMessageAt;
+
+	string funAddrtext = "funAddr：\t";
+	funAddrtext.append(Dec2Hex(funAddr));
+	OutputDebugString(String2LPCWSTR(funAddrtext));
+
 	DialogBox(hModule, MAKEINTRESOURCE(IDD_MAIN), NULL, &DialogProc);
 }
 
@@ -90,9 +111,15 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		if (wParam == BTN_SEND_AT)
 		{
 			OutputDebugString(TEXT("发送at消息 BTN_SEND_AT"));
+
+			SentRoomMessageAt(hwndDlg);
+
 			//SentAtTextMessage(hwndDlg);
 		}
-
+		else if (wParam == IDC_BTN_UNLOAD) {
+			OutputDebugString(TEXT("卸载自己"));
+			UnLoadMyself();
+		}
 		break;
 	default:
 		break;
@@ -144,7 +171,7 @@ string Dec2Hex(DWORD i)
  VOID SentTextMessage(HWND hwndDlg)
 {
 	//call WeChatWi.6D0FA7F0; 发送消息断点 ,6D0FA7F0 = wxBaseAddress + g_callAddr
-	DWORD callFunAddr = wxBaseAddress + g_callAddr;
+	DWORD callFunAddr = wxBaseAddress + SEND_MSG_HOOK_ADDRESS;
 
 	//组装wxid数据
 	WCHAR wxid[50];
@@ -179,7 +206,7 @@ string Dec2Hex(DWORD i)
 	DWORD* asmMsg = (DWORD*)&structMessage.pWxid;
 
 	//定义一个缓冲区
-	BYTE buff[g_msgBuffer] = { 0 };
+	BYTE buff[SEND_MSG_BUFFER] = { 0 };
 
 	//执行汇编调用
 	__asm
@@ -199,6 +226,137 @@ string Dec2Hex(DWORD i)
 	}
 
 }
+
+ class TEXT_WX
+ {
+ public:
+	 wchar_t* pWxid = nullptr;
+	 DWORD length = 0;
+	 DWORD maxLength = 0;
+	 DWORD fill1 = 0;
+	 DWORD fill2 = 0;
+	 wchar_t wxid[1024] = { 0 };
+
+	 TEXT_WX(wstring wsWxid)
+	 {
+		 const wchar_t* temp = wsWxid.c_str();
+		 wmemcpy(wxid, temp, wsWxid.length());
+		 length = wsWxid.length();
+		 maxLength = wsWxid.capacity();
+		 fill1 = 0;
+		 fill2 = 0;
+		 pWxid = wxid;
+	 }
+ };
+
+ class TEXT_WXID
+ {
+ public:
+	 wchar_t* pWxid = nullptr;
+	 DWORD length = 0;
+	 DWORD maxLength = 0;
+	 DWORD fill1 = 0;
+	 DWORD fill2 = 0;
+ };
+
+ class ROOM_AT
+ {
+ public:
+	 DWORD at_WxidList = 0;
+	 DWORD at_end1 = 0;
+	 DWORD at_end2 = 0;
+ };
+ 
+ VOID SentRoomMessageAt(HWND hwndDlg) {
+
+
+	 HMODULE dllAdress = GetModuleHandleA("WeChatWin.dll");
+	 DWORD callFunAddr = wxBaseAddress + SEND_MSG_HOOK_ADDRESS;
+
+	 //122A8258  13A9A3F0  UNICODE "5847657683@chatroom"
+	 //TEXT_WX wxId(L"5847657683@chatroom");
+
+
+	 //122A8258  13A9A3F0  UNICODE "5847657683@chatroom"
+	 TEXT_WX wxId(L"24377562166@chatroom");
+
+	 //14139DEC  14139CF8  UNICODE "@马天佑 hahhaa"
+	 TEXT_WX wxMsg(L"@张zhangjx 22222222");
+
+
+	 //012CE028  13573FA0  UNICODE "wxid_k2d9oduqc9lc22"
+	 WCHAR atIt[50] = L"wxid_4j4mqsuzdgie22";
+	 TEXT_WXID wxAtId;
+	 wxAtId.pWxid = atIt;
+	 wxAtId.length = wcslen(atIt);
+	 wxAtId.maxLength = wcslen(atIt) * 2;
+	 wxAtId.fill1 = 0;
+	 wxAtId.fill2 = 0;
+
+	 ROOM_AT roomAt;
+	 roomAt.at_WxidList = (DWORD)&wxAtId.pWxid;
+	 roomAt.at_end1 = roomAt.at_WxidList + 5 * 4;
+	 roomAt.at_end2 = roomAt.at_end1;
+
+	 //定义一个缓冲区
+	 BYTE buff[SEND_MSG_BUFFER] = { 0 };
+
+	 WCHAR wxid2[50] = TEXT("1111111111111111111");
+
+	 //执行汇编调用
+	 __asm
+	 {
+		 //群号
+		 //mov edx, asmWxid
+		 lea edx, wxId
+
+		 //传递参数
+		 push 0x1
+
+		 //mov eax, 0x0
+		 lea eax, roomAt
+		 push eax
+
+		 //微信消息内容
+		 //mov ebx, asmMsg
+		 lea ebx, wxMsg
+
+		 push ebx
+
+		 lea ecx, buff
+
+		 //调用函数
+		 call callFunAddr
+
+		 //平衡堆栈
+		 add esp, 0xC
+
+	 }
+
+ }
+
+
+
+ //卸载自己
+ VOID UnLoadMyself()
+ {
+	 HMODULE hModule = NULL;
+
+	 //GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS 会增加引用计数
+	 //因此，后面还需执行一次FreeLibrary
+	 //直接使用本函数（UnInject）地址来定位本模块
+	 GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPWSTR)&UnLoadMyself, &hModule);
+
+	 if (hModule != 0)
+	 {
+		 //减少一次引用计数
+		 FreeLibrary(hModule);
+
+		 //卸载自己并退出
+		 FreeLibraryAndExitThread(hModule, 0);
+	 }
+ }
+
 
 //把string 转换为 LPCWSTR
 LPCWSTR String2LPCWSTR(string text)
@@ -224,3 +382,4 @@ string WcharToString(WCHAR* wchar)
 	// std::string赋值
 	return psText;
 }
+

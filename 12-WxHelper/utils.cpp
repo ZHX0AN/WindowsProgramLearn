@@ -101,3 +101,13 @@ string Dec2Hex(DWORD i)
     ioss >> s_temp;
     return "0x" + s_temp;
 }
+
+
+wchar_t* StrToWchar(std::string str)
+{
+    int strSize = (int)(str.length() + 1);
+    wchar_t* wStr = new wchar_t[strSize];
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, wStr, strSize);
+    return wStr;
+    delete[] wStr;
+}

@@ -1,6 +1,9 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include "rapidjson/document.h"     // rapidjson's DOM-style API
+#include "rapidjson/prettywriter.h" // for stringify JSON
+#include "rapidjson/pointer.h"
 #include <WinSock2.h>
 #include <iostream>
 #include <stdio.h>
@@ -10,6 +13,8 @@
 
 #include "utils.h"
 
+using namespace rapidjson;
+using namespace std;
 
 using std::cin;
 using std::cout;
@@ -135,8 +140,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 DWORD WINAPI ThreadProc(PVOID lpParameter) {
 
     OutputDebugString(TEXT("WeChatHelper ThreadProc... "));
-    //SocketClient();
-
 
     //1.建立流式套接字
     InitSocket();
@@ -145,6 +148,11 @@ DWORD WINAPI ThreadProc(PVOID lpParameter) {
 
     char receiveBuf[nBufMaxSize];
     int nRetByte;
+
+    //RapidJson
+    Document doc;
+    doc.SetObject();
+    Document::AllocatorType& allocator = doc.GetAllocator(); //获取分配器
 
     while (true) {
         //nRetByte：读取长度，直到遇到0
@@ -156,11 +164,30 @@ DWORD WINAPI ThreadProc(PVOID lpParameter) {
         }
         else if (nRetByte != 0) {
 
-            //int nSize = strlen(receiveBuf);
+            if (doc.ParseInsitu(receiveBuf).HasParseError()) {
+                OutputDebugString(TEXT("ParseInsitu is error...\n"));
+                continue;
+            }
+
+            int nType = doc["type"].GetInt();
+            wchar_t* wToWxid = StrToWchar(doc["data"]["to_wxid"].GetString());
+            wchar_t* wContent = StrToWchar(doc["data"]["content"].GetString());
 
             string text = "receiveBuf长度：\t";
             text.append(Dec2Hex(nRetByte));
+            text.append(",type: \t");
+            //text.append(Dec2Hex(nType));
             OutputDebugString(String2LPCWSTR(text));
+
+
+            OutputDebugString(wToWxid);
+            OutputDebugString(wContent);
+
+            //RapidJson解析
+            //读nRetByte长度数据
+
+            
+
 
 
             //OutputDebugStringA((receiveBuf));

@@ -45,6 +45,8 @@ int bytesToInt(byte* bytes)
 	return a;
 }
 
+//未实现
+
 
 int main()
 {
@@ -141,6 +143,13 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	DWORD header1 = GetWxMemoryInt(hProcess, roomAddress);
 	DWORD header2 = GetWxMemoryInt(hProcess, roomAddress + 4);
 	DWORD header3 = GetWxMemoryInt(hProcess, roomAddress + 8);
+
+
+	//0x10	群号
+//0x28 群号
+//0x3c 好友id list
+//0x6c 群主wxid
+//0x84 在群中的昵称
 
 
 

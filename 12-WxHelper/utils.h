@@ -15,3 +15,5 @@ string WcharToString(wchar_t* wchar);
 
 
 DWORD GetWxMemoryInt(HANDLE hProcess, DWORD baseAddress);
+
+wchar_t* StrToWchar(std::string str);

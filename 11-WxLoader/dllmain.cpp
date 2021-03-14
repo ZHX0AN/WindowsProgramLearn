@@ -21,11 +21,12 @@ using namespace std;
 #define nSerPort 10080
 #define nBufMaxSize 1024
 
+void debugLog(char* logStr);
 
 
 BOOL InitWeChatSocket();
 
-void debugLog(char* logStr);
+/******************socket 开始*****************/
 BOOL InitSocket();
 SOCKET BindListen(int nBackLog);
 SOCKET AcceptConnetion(SOCKET hSocket);
@@ -34,9 +35,15 @@ BOOL CloseConnect(SOCKET sd);
 void MyTcpServeFun();
 
 SOCKET g_hClient;
+/******************socket 结束*****************/
+
 
 static DWORD  g_WinBaseDddress = 0;
 static HANDLE g_hProcess = 0;
+
+
+
+
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -413,6 +420,6 @@ void MyTcpServeFun() {
 
 BOOL SendMsgText(LPCSTR lpJsonData) {
 
-    int nSize = strlen(lpJsonData) ;
+    int nSize = strlen(lpJsonData) + 1;
     return SocketSendMsg(g_hClient, (char *)lpJsonData, nSize);
 }
