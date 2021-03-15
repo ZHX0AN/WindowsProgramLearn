@@ -190,10 +190,6 @@ __declspec(naked) VOID RecieveMsgHook(DWORD dEsp)
 		push edi
 
 		//提取esp寄存器内容，放在一个变量中
-
-	    //这里使用全局变量 r_esp，将导致丢失消息，原因：多线程情况下，新数据覆盖旧数据
-		//在这里，可以将esp直接压入堆栈(esp变动多)，然后在RecieveMsg函数中进行计算
-		//在这里，可以将ebp直接压入堆栈(ebp变动少)，然后在RecieveMsg函数中进行计算
 		mov dEsp, esp
 
 		//保存寄存器
