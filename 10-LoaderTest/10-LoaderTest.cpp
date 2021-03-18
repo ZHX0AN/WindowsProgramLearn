@@ -1,84 +1,87 @@
-﻿// 10-LoaderTest.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+﻿// LoaderTest.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
 //
 #include <iostream>
 #include <windows.h> 
 #include <string.h> 
+#include <tchar.h>
 
 using namespace std;
 
 
-//微信ID的结构体
-struct UserInfoStructRPC
-{
-    TCHAR wxid[50];
-    TCHAR nickname[100];
-    TCHAR avatar[200];
-};
+/*
+ * 只支持3.1.0.72版本
+ */
+typedef VOID(*RECEIVE)(DWORD, LPSTR, DWORD);
+typedef VOID(*ACCEPT)(DWORD);
+typedef VOID(*CLOSE)(DWORD);
+typedef BOOL(*InitFn)(RECEIVE, ACCEPT, CLOSE);
 
-
-//定义函数指针
-typedef BOOL(*lpInitWeChatSocket) ();
 typedef BOOL(*lpInjectWechat) (LPCSTR);
-typedef string(*lpGetUserInfo) ();
-typedef string(*lpGetContactList) ();
-typedef BOOL(*lpSendMsgText) (LPCSTR);
+
+//typedef BOOL(*lpSendWeChatData) (DWORD, LPCSTR);
+
+typedef BOOL(*lpSendFn)(DWORD, LPCSTR);
 
 
-
-int main()
+VOID receive(DWORD clientId, LPSTR data, DWORD len)
 {
-    //声明定义函数指针变量
-    lpInitWeChatSocket InitWeChatSocket;
-    lpInjectWechat InjectWechat;
-    lpSendMsgText SendMsgText;
+    //std::cout << "new message! " << data << endl;
+    std::cout << data << endl;
+}
+VOID accept(DWORD clientId)
+{
+    std::cout << "new client! " << endl;
+}
+VOID close(DWORD clientId)
+{
+    std::cout << "client closed! " << endl;
+}
 
-    //lpGetUserInfo GetUserInfo;
-    //lpGetContactList GetContactList;
-   
 
-    //动态加载dll到内存
+int _tmain(int argc, _TCHAR* argv[])
+{
+
+    //加载Dll
     HINSTANCE   hModule = LoadLibraryW(L"11-WxLoader.dll");
 
-    //获取函数地址
-    //GetUserInfo = (lpGetUserInfo)GetProcAddress(hModule, "GetUserInfo");
-    //GetContactList = (lpGetUserInfo)GetProcAddress(hModule, "GetContactList");
+    //注入Dll
+    lpInjectWechat InjectWechat = (lpInjectWechat)GetProcAddress(hModule, "InjectWechat");
+    char DLLFileName[] = "C:\\project\\MyWeChat\\PcWxSingle\\Debug\\12-WxHelper.dll";
+    std::cout << "注入DLL：" << InjectWechat(DLLFileName) << endl;
 
 
-    InitWeChatSocket = (lpInitWeChatSocket)GetProcAddress(hModule, "InitWeChatSocket");
-    InitWeChatSocket();
+    Sleep(1000);
+
+    //初始化
+    BOOL rs = FALSE;
+    InitFn InitWeChatSocket = (InitFn)GetProcAddress(hModule, "InitWeChatSocket");
+    rs = InitWeChatSocket(receive, accept, close);
+    std::cout << "初始化结果：" << rs << endl;
+
+    //	while(1)
+    Sleep(1000);
 
 
-    InjectWechat = (lpInjectWechat)GetProcAddress(hModule, "InjectWechat");
-    char DLLFileName[] = "C:\\workspaces\\MyWeChat\\PcWxSingle\\Debug\\12-WxHelper.dll";
-    std::cout << InjectWechat(DLLFileName) << endl;
+    DWORD dwClientId = 1;
+    lpSendFn SendWeChatData = (lpSendFn)GetProcAddress(hModule, "SendWeChatData");
 
 
     //获取个人信息
-    //string userInfo = GetUserInfo();
-    //cout << userInfo << endl;
+    printf("获取个人信息：\n");
+    LPCSTR lpUserInfo = "{\"data\":{},\"type\": 11028}";
+    SendWeChatData(dwClientId, lpUserInfo);
 
+    //Sleep(1000);
 
-    //获取联系人
-    //cout << GetContactList();
-
-
-    //LPCSTR str = "{\"data\": {\"to_wxid\": \"wxid_4sy2barbyny712\",\"content\": \"你好，世界\" },\"type\": 11036}";
-
-    //char str[] = "{\"data\": {\"to_wxid\": \"wxid_4sy2barbyny712\",\"content\": \"123aaa\" },\"type\": 11036}";
-
-
-    Sleep(3000);
-
-    SendMsgText = (lpSendMsgText)GetProcAddress(hModule, "SendMsgText");
-
-    //LPCSTR str2 = "hello111";
-    //SendMsgText(str2);
-
-
-    LPCSTR str = "{\"data\": {\"to_wxid\": \"wxid_4j4mqsuzdgie22\",\"content\": \"中文\" },\"type\": 1}";
-    SendMsgText(str);
+    //printf("发送文本消息。\n");
+    //LPCSTR lpSendMsgText = "{\"data\": {\"to_wxid\": \"wxid_4j4mqsuzdgie22\",\"content\": \"你好\" },\"type\": 11036}";
+    //SendWeChatData(dwClientId, lpSendMsgText);
 
 
 
-    getchar();
+    while (true)
+    {
+        Sleep(5000);
+    }
+    cin.get();
 }

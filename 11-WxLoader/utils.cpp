@@ -3,23 +3,36 @@
 #include "pch.h"
 #include "utils.h"
 #include "string"
-#include <sstream>
-#include <iostream>
-#include <iomanip>
 #include <vector>
 #include "AddrOffset.h"
+#include <WinSock2.h>
 
 using namespace std;
 
+
 //DWORD weChatWinAddress = 0;
+
+
+//把string 转换为 LPCWSTR
+LPCWSTR String2LPCWSTR(string text)
+{
+    size_t size = text.length();
+    WCHAR* buffer = new WCHAR[size + 1];
+    MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, buffer, size + 1);
+
+    //确保以 '\0' 结尾
+    buffer[size] = 0;
+    return buffer;
+}
+
 
 DWORD BytesToDword(BYTE* bytes)
 {
-	DWORD a = bytes[0] & 0xFF;
-	a |= ((bytes[1] << 8) & 0xFF00);
-	a |= ((bytes[2] << 16) & 0xFF0000);
-	a |= ((bytes[3] << 24) & 0xFF000000);
-	return a;
+    DWORD a = bytes[0] & 0xFF;
+    a |= ((bytes[1] << 8) & 0xFF00);
+    a |= ((bytes[2] << 16) & 0xFF0000);
+    a |= ((bytes[3] << 24) & 0xFF000000);
+    return a;
 }
 
 
@@ -69,33 +82,13 @@ string WcharToString(wchar_t* wchar)
     return psText;
 }
 
-
-//把string 转换为 LPCWSTR
-LPCWSTR String2LPCWSTR(string text)
+wchar_t* StrToWchar(std::string str)
 {
-    size_t size = text.length();
-    WCHAR* buffer = new WCHAR[size + 1];
-    MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, buffer, size + 1);
-
-    //确保以 '\0' 结尾
-    buffer[size] = 0;
-    return buffer;
-}
-
-//将int转成16进制字符串
-string Dec2Hex(DWORD i)
-{
-    //定义字符串流
-    stringstream ioss;
-    //存放转化后字符
-    string s_temp;
-    //以十六制(大写)形式输出
-    ioss.fill('0');
-    ioss << setiosflags(ios::uppercase) << setw(8) << hex << i;
-    //以十六制(小写)形式输出//取消大写的设置
-    //ioss << resetiosflags(ios::uppercase) << hex << i;
-    ioss >> s_temp;
-    return "0x" + s_temp;
+    int strSize = (int)(str.length() + 1);
+    wchar_t* wStr = new wchar_t[strSize];
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, wStr, strSize);
+    return wStr;
+    delete[] wStr;
 }
 
 
@@ -113,3 +106,15 @@ DWORD getWeChatWinAddr()
 
 
 
+void DebugLog(char* logStr) {
+    //cout << logStr << WSAGetLastError() << endl;
+
+    OutputDebugString(String2LPCWSTR(logStr));
+
+}
+
+void DebugLog(LPCWSTR logStr) {
+    //OutputDebugString((LPCWSTR)WSAGetLastError());
+    OutputDebugString(logStr);
+
+}
