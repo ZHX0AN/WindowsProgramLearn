@@ -216,6 +216,8 @@ VOID RecieveMsg(DWORD dEsp)
 {
 
 
+	//0x38：如果是文件 0x38是7，如果是：链接、转账、文章 0x38是2
+
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
 	//发送人，好友或群ID
@@ -243,7 +245,7 @@ VOID RecieveMsg(DWORD dEsp)
 	DWORD** msgAddress = (DWORD**)dEsp;
 
 	//消息类型[[esp]]+0x30
-	//[01文字] [03图片] [31转账XML信息] [22语音消息] [02B视频信息]
+	//[01文字] [03图片] [31 文件、转账、XML信息] [22语音消息] [02B视频信息][2710红包]
 	DWORD msgType = *((DWORD*)(**msgAddress + msgTypeOffset));
 	receivedMessage.append(TEXT("消息类型:"));
 	switch (msgType)
@@ -278,14 +280,14 @@ VOID RecieveMsg(DWORD dEsp)
 		//case 0x30:
 		//	receivedMessage.append(TEXT("位置"));
 		//	break;
-		case 0x31:
-			//共享实时位置
-			//文件
-			//转账
-			//链接
+	case 0x31:
+		//共享实时位置
+		//文件
+		//转账
+		//链接
 
-			receivedMessage.append(TEXT("共享实时位置、文件、转账、链接"));
-			break;
+		receivedMessage.append(TEXT("共享实时位置、文件、转账、链接"));
+		break;
 		//case 0x32:
 		//	receivedMessage.append(TEXT("VOIPMSG"));
 		//	break;

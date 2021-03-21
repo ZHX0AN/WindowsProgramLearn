@@ -79,7 +79,7 @@ DWORD WINAPI ThreadProcsend(PVOID lpParameter)
 {
 	while (1)
 	{
-		Sleep(3000);
+		Sleep(100);
 		if (gSendQue.size() > 0)
 		{
 			string strSend = gSendQue.front();

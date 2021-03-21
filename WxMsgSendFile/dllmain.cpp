@@ -24,26 +24,51 @@ string Dec2Hex(DWORD i);
 WCHAR* CharToWChar(char* s);
 VOID UnLoadMyself();
 VOID ThreadSendMessage(HWND   hwndDlg);
-VOID SendMessageFile2(HWND hwndDlg);
-VOID SendMessageFile3(HWND hwndDlg);
+void SendFileMessage(wchar_t* wxid, wchar_t* filepath);
 
 //定义变量
 DWORD wxBaseAddress = 0;
 
 BOOL flag = true;
 
-/**
- * 发送文件
- */
-#define SEND_FILE_PARAM 0x1550368
-#define SEND_FILE_ADDR0 0x574180
+///**
+// * 发送文件
+// */
+//#define SEND_FILE_PARAM 0x1550368
+//#define SEND_FILE_ADDR0 0x574180
+//
+//#define SEND_FILE_ADDR1 0x5741C0
+//#define SEND_FILE_ADDR2 0x5741C0
+//#define SEND_FILE_ADDR3 0x66CB0
+//#define SEND_FILE_ADDR4 0x2B7600
+//
+//#define BUFF_SIZE 0x350
 
-#define SEND_FILE_ADDR1 0x5741C0
-#define SEND_FILE_ADDR2 0x5741C0
-#define SEND_FILE_ADDR3 0x66CB0
-#define SEND_FILE_ADDR4 0x2B7600
 
-#define BUFF_SIZE 0x350
+
+#define WxFileMessage1 0x574180				 //发送文件消息   1
+#define WxFileMessage2 0x5741C0				 //发送文件消息   1
+#define WxFileMessage3 0x66CB0				 //发送文件消息   1
+#define WxFileMessage4 0x2B7600				 //发送文件消息   1
+#define WxFileMessageParam 0x1550368		 //发送文件消息    1
+
+//微信通用结构体
+struct GeneralStruct
+{
+	wchar_t* pstr;
+	int iLen;
+	int iMaxLen;
+	int full1;
+	int full2;
+	GeneralStruct(wchar_t* pString)
+	{
+		pstr = pString;
+		iLen = wcslen(pString);
+		iMaxLen = iLen * 2;
+		full1 = 0;
+		full2 = 0;
+	}
+};
 
 
 BOOL APIENTRY DllMain(HMODULE hModule,
@@ -84,14 +109,12 @@ VOID ShowDemoUI(HMODULE hModule)
 
 
 	//DWORD funAdd = (DWORD)SentTextMessage;
-	DWORD funAdd = (DWORD)SendMessageFile2;
-	
+	DWORD funAdd = (DWORD)SentTextMessage;
 	string funAddtext = "funAdd：\t";
 	funAddtext.append(Dec2Hex(funAdd));
 	OutputDebugString(String2LPCWSTR(funAddtext));
 
 	DialogBox(hModule, MAKEINTRESOURCE(IDD_MAIN), NULL, &DialogProc);
-
 }
 
 //窗口回调函数，处理窗口事件
@@ -179,379 +202,150 @@ VOID ThreadSendMessage(HWND   hwndDlg) {
 	}
 }
 
-//第一版。正确执行
+
 VOID SentTextMessage(HWND hwndDlg)
 {
-
-	//微信ID的结构体
-	struct WxidStr
-	{
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x8] = { 0 };
-	};
-
-	//文件路径的结构体
-	struct filePathStr
-	{
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x18] = { 0 };
-	};
-
-
-	//构造需要的地址
-	DWORD callAddr0 = wxBaseAddress + SEND_FILE_ADDR0;
-	DWORD paramAddr0 = wxBaseAddress + SEND_FILE_PARAM;
-
-	DWORD callAddr1 = wxBaseAddress + SEND_FILE_ADDR1;
-	DWORD callAddr2 = wxBaseAddress + SEND_FILE_ADDR2;
-	DWORD callAddr3 = wxBaseAddress + SEND_FILE_ADDR3;	//组合数据
-	DWORD callAddr4 = wxBaseAddress + SEND_FILE_ADDR4;	//发送消息
-	
-
 	//构造需要的数据
-		//组装wxid数据
-	WCHAR wxid[50] = { 0 };
+	//组装wxid数据
+	wchar_t wxid[50] = { 0 };
 	UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_WXID, wxid, 50);
 	if (uINT == 0)
 	{
 		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
 		return;
 	}
-	WxidStr wxidStruct = { 0 };
-	wxidStruct.str = wxid;
-	wxidStruct.strLen = wcslen(wxid);
-	wxidStruct.maxLen = wcslen(wxid) * 2;
 
-
-	WCHAR wxMsg[1024] = { 0 };
-	uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, wxMsg, 1024);
+	wchar_t filepath[1024] = { 0 };
+	uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, filepath, 1024);
 	if (uINT == 0)
 	{
 		MessageBoxA(NULL, "请填写文件路径", "错误", MB_OK | MB_ICONERROR);
 		return;
 	}
 
+	//SendFileMessage(wxid, wxMsg);
 
-	filePathStr filePathStruct = { 0 };
-	filePathStruct.str = wxMsg;
-	filePathStruct.strLen = wcslen(wxMsg);
-	filePathStruct.maxLen = wcslen(wxMsg) * 2;
 
+	//构造需要的地址
+	DWORD dwBase = wxBaseAddress;
+	DWORD dwCall1 = dwBase + WxFileMessage1;
+	DWORD dwCall2 = dwBase + WxFileMessage2;
+	DWORD dwCall3 = dwBase + WxFileMessage3;	//组合数据
+	DWORD dwCall4 = dwBase + WxFileMessage4;	//发送消息
+	DWORD dwParams = dwBase + WxFileMessageParam;
+
+	char buff[0x45C] = { 0 };
+
+	//构造需要的数据
+	GeneralStruct wxidStruct(wxid);
+	GeneralStruct filePathStruct(filepath);
 
 	//取出需要的数据的地址
-	char* pFilePath = (char*)&filePathStruct.str;
-	char* pWxid = (char*)&wxidStruct.str;
-
-	
-	char buff[BUFF_SIZE] = { 0 };
-	char buff2[4] = { 0 };
-
-	DWORD addr1 = (DWORD)buff2;
-	DWORD pAddr1 = (DWORD)&addr1;
-
-	WCHAR wxid2[50] = TEXT("1111111111111111111");
+	char* pFilePath = (char*)&filePathStruct.pstr;
+	char* pWxid = (char*)&wxidStruct.pstr;
 
 	__asm {
-		pushad
+		pushad;
+		sub esp, 0x14;
+		lea eax, buff;
+		mov ecx, esp;
+		push eax;
+		call dwCall2;
 
-		//push dword ptr ss:[ebp-0x6C]
-		sub esp, 0x14
-		mov ecx,esp
-		lea eax, buff2
-		push eax
-		call callAddr1
-		push pAddr1;
+		push 0;
+		sub esp, 0x14;
+		mov ecx, esp;
+		push - 0x1;
+		push dwParams;
+		call dwCall1;
 
+		sub esp, 0x14;
+		mov ecx, esp;
+		mov ebx, pFilePath;
+		push ebx;
+		call dwCall2;
 
-		sub esp, 0x14
-		mov ecx, esp
-		push - 0x1
-		push paramAddr0
-		call callAddr0
+		sub esp, 0x14;
+		mov eax, pWxid;
+		mov ecx, esp;
+		push eax;
+		call dwCall2;
 
-		sub esp, 0x14
-		mov ecx, esp
-		push pFilePath
-		call callAddr1
+		lea eax, buff;
+		push eax;
+		call dwCall3;
 
-		sub esp, 0x14
-		mov ecx, esp
-		lea eax, wxidStruct
-		push eax
-		call callAddr2
-
-		lea eax, buff
-		push eax
-		call callAddr3
-
-		mov ecx, eax
-		call callAddr4
-		popad
-
-
-		//pushad
-
-		//lea eax, buff2
-		//push eax
-		//sub esp, 0x14
-		//mov ecx, esp
-		//push - 0x1
-		//push paramAddr0
-		//call callAddr0
-
-		//sub esp, 0x14
-		//mov ecx, esp
-		//push pFilePath
-		//call callAddr1
-
-		//sub esp, 0x14
-		//mov ecx, esp
-		//lea eax, wxidStruct
-		//push eax
-		//call callAddr2
-
-		//lea eax, buff
-		//push eax
-		//call callAddr3
-
-		//mov ecx, eax
-		//call callAddr4
-
-		//popad
+		mov ecx, eax;
+		call dwCall4;
+		popad;
 	}
+
 
 	//OutputDebugString(String2LPCWSTR("end asm....."));
 }
 
 
-//第二版
-VOID SendMessageFile2(HWND hwndDlg) {
-
-
-	//微信ID的结构体
-	struct WxidStr
+void SendFileMessage(wchar_t* wxid, wchar_t* filepath)
+{
+	if (GetFileAttributesW(filepath) == INVALID_FILE_ATTRIBUTES)
 	{
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x8] = { 0 };
-	};
-
-	//组装wxid数据
-	WCHAR wxid[50] = { 0 };
-	UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_WXID, wxid, 50);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
+		//__OutputDebugStringW(L"%s文件不存在", filepath);
 		return;
 	}
-	WxidStr wxidStruct = { 0 };
-	wxidStruct.str = wxid;
-	wxidStruct.strLen = wcslen(wxid);
-	wxidStruct.maxLen = wcslen(wxid) * 2;
 
-	//文件路径的结构体
-	struct filePathStr
-	{
-		int param1;
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x1C] = { 0 };
-	};
+	//构造需要的地址
+	DWORD dwBase = wxBaseAddress;
+	DWORD dwCall1 = dwBase + WxFileMessage1;
+	DWORD dwCall2 = dwBase + WxFileMessage2;
+	DWORD dwCall3 = dwBase + WxFileMessage3;	//组合数据
+	DWORD dwCall4 = dwBase + WxFileMessage4;	//发送消息
+	DWORD dwParams = dwBase + WxFileMessageParam;
 
+	char buff[0x45C] = { 0 };
 
-	WCHAR fileMsg[1024] = { 0 };
-	uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, fileMsg, 1024);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写文件路径", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
-	filePathStr filePathStruct = { 0 };
-	filePathStruct.param1 = 0x3;
-	filePathStruct.str = fileMsg;
-	filePathStruct.strLen = wcslen(fileMsg);
-	filePathStruct.maxLen = wcslen(fileMsg) * 2;
+	//构造需要的数据
+	GeneralStruct wxidStruct(wxid);
+	GeneralStruct filePathStruct(filepath);
 
-
-	////取出需要的数据的地址
-	//char* pFilePath = (char*)&filePathStruct.param1;
-	//char* pWxid = (char*)&wxidStruct.str;
-
-
-	DWORD* asmFile = (DWORD*)&filePathStruct.param1;
-
-	DWORD pAsmFile = (DWORD)&asmFile;
-
-
-	//文件路径的结构体
-	struct struct2
-	{
-		DWORD param1;
-		DWORD param2;
-		DWORD param3;
-	};
-	struct2 s2 = { 0 };
-	s2.param1 = pAsmFile;
-
-	//0055CA04  0055DBFC
-	//	0055CA08  0D2D1E90  UNICODE "filehelper"
-	//	0055CA0C  0000000A
-	//	0055CA10  0000000A
-	//	0055CA14  00000000
-	//	0055CA18  00000000
-
-	WCHAR wxid2[50] = TEXT("2222222222222222222");
+	//取出需要的数据的地址
+	char* pFilePath = (char*)&filePathStruct.pstr;
+	char* pWxid = (char*)&wxidStruct.pstr;
 
 	__asm {
+		pushad;
+		sub esp, 0x14;
+		lea eax, buff;
+		mov ecx, esp;
+		push eax;
+		call dwCall2;
 
-		//pushad
+		push 0;
+		sub esp, 0x14;
+		mov ecx, esp;
+		push - 0x1;
+		push dwParams;
+		call dwCall1;
 
-		push 0x0
-		push 0x0
-		push wxidStruct.strLen
-		push wxidStruct.maxLen
-		push wxidStruct.str
+		sub esp, 0x14;
+		mov ecx, esp;
+		mov ebx, pFilePath;
+		push ebx;
+		call dwCall2;
 
+		sub esp, 0x14;
+		mov eax, pWxid;
+		mov ecx, esp;
+		push eax;
+		call dwCall2;
 
-		mov ebx, s2.param1
-		push ebx
+		lea eax, buff;
+		push eax;
+		call dwCall3;
 
-		add esp, 0x18
-		
-
-		//popad
+		mov ecx, eax;
+		call dwCall4;
+		popad;
 	}
-
-
-}
-
-
-//第3版
-VOID SendMessageFile3(HWND hwndDlg) {
-
-
-	//微信ID的结构体
-	struct WxidStr
-	{
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x8] = { 0 };
-	};
-
-	//组装wxid数据
-	WCHAR wxid[50] = { 0 };
-	UINT uINT = GetDlgItemText(hwndDlg, IDC_TEXT_WXID, wxid, 50);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写wxid", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
-	WxidStr wxidStruct = { 0 };
-	wxidStruct.str = wxid;
-	wxidStruct.strLen = wcslen(wxid);
-	wxidStruct.maxLen = wcslen(wxid) * 2;
-
-	//文件路径的结构体
-	struct filePathStr
-	{
-		wchar_t* str;
-		int strLen = 0;
-		int maxLen = 0;
-		char file[0x1C] = { 0 };
-	};
-
-
-	WCHAR fileMsg[1024] = { 0 };
-	uINT = GetDlgItemText(hwndDlg, IDC_TEXT_PATH, fileMsg, 1024);
-	if (uINT == 0)
-	{
-		MessageBoxA(NULL, "请填写文件路径", "错误", MB_OK | MB_ICONERROR);
-		return;
-	}
-	filePathStr filePathStruct = { 0 };
-	filePathStruct.str = fileMsg;
-	filePathStruct.strLen = wcslen(fileMsg);
-	filePathStruct.maxLen = wcslen(fileMsg) * 2;
-
-
-	////取出需要的数据的地址
-	//char* pFilePath = (char*)&filePathStruct.param1;
-	//char* pWxid = (char*)&wxidStruct.str;
-
-
-	DWORD* asmFile = (DWORD*)&filePathStruct.str;
-
-	DWORD pAsmFile = (DWORD)&asmFile;
-
-
-
-	//文件路径的结构体
-	struct struct2
-	{
-		DWORD param1;
-		DWORD param2;
-		DWORD param3;
-	};
-	struct2 s2 = { 0 };
-	s2.param1 = pAsmFile;
-
-	//0055CA04  0055DBFC
-	//	0055CA08  0D2D1E90  UNICODE "filehelper"
-	//	0055CA0C  0000000A
-	//	0055CA10  0000000A
-	//	0055CA14  00000000
-	//	0055CA18  00000000
-
-	char buff[BUFF_SIZE] = { 0 };
-	DWORD addr1 = (DWORD)buff;
-
-	WCHAR wxid2[50] = TEXT("3333333333333333333333");
-
-	DWORD callAddr = wxBaseAddress + 0x2B7600;
-
-	__asm {
-
-		pushad
-
-
-		//先增加文件
-		push 0x0
-		push 0x0
-		push 0x0
-		push 0x0
-		push 0x0
-		push 0x0
-		push 0x0
-		push filePathStruct.maxLen
-		push filePathStruct.strLen
-		push filePathStruct.str
-
-
-		//增加微信
-		push 0x0
-		push 0x0
-		push wxidStruct.maxLen
-		push wxidStruct.strLen
-		push wxidStruct.str
-
-		push addr1
-
-		call callAddr
-
-		add esp, 0x40
-
-
-		popad
-	}
-
-
 }
 
 

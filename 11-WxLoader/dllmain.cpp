@@ -390,14 +390,22 @@ BOOL CloseConnect(SOCKET sd) {
 
 SOCKET ConnectSocket() {
 
+	int iRetValue = 0;
 	SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 	SOCKADDR_IN clientsock_in;
 	clientsock_in.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 	clientsock_in.sin_family = AF_INET;
 	clientsock_in.sin_port = htons(10080);
-	connect(clientSocket, (SOCKADDR*)&clientsock_in, sizeof(SOCKADDR));//开始连接
-	//int n = send(clientSocket, "123", 3, 0);
+
+	iRetValue = connect(clientSocket, (SOCKADDR*)&clientsock_in, sizeof(SOCKADDR));//开始连接
+
+	//如果连接失败，睡眠一秒，直到成功
+	while (iRetValue == SOCKET_ERROR) {
+		Sleep(1000);
+		iRetValue = connect(clientSocket, (SOCKADDR*)&clientsock_in, sizeof(SOCKADDR));//开始连接
+	}
+
 	return clientSocket;
 }
 /****************** 2、业务代码 开始*****************/
