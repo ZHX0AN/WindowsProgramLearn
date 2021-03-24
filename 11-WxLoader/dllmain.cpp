@@ -1,7 +1,6 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #pragma once
 #define _CRT_SECURE_NO_WARNINGS
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "rapidjson/document.h"     // rapidjson's DOM-style API
 #include "rapidjson/prettywriter.h" // for stringify JSON
 #include "rapidjson/pointer.h"
@@ -33,12 +32,8 @@ extern "C" _declspec(dllexport) VOID ACCEPT(DWORD);
 extern "C" _declspec(dllexport) VOID CLOSE(DWORD);
 
 extern "C" _declspec(dllexport) BOOL InjectWechat(LPCSTR szDllPath);
-extern "C" _declspec(dllexport) BOOL SendMsgText(LPCSTR lpJsonData);
 extern "C" _declspec(dllexport) BOOL SendWeChatData(DWORD dwClientId, LPCSTR szJsonData);
-extern "C" _declspec(dllexport) BOOL InitWeChatSocket(VOID(*RECEIVE)(DWORD, LPSTR, DWORD), VOID(*ACCEPT)(DWORD), VOID(*CLOSE)(DWORD));
-
-//extern "C" _declspec(dllexport) BOOL InjectWechat(LPCSTR szDllPath);
-//extern "C" _declspec(dllexport) BOOL SendWeChatData(DWORD dwClientId, LPCSTR szJsonData);
+extern "C" _declspec(dllexport)  BOOL InitWeChatSocket(VOID(*RECEIVE)(DWORD, LPSTR, DWORD), VOID(*ACCEPT)(DWORD), VOID(*CLOSE)(DWORD));
 
 typedef struct {
 	VOID(*RECEIVE)(DWORD, LPSTR, DWORD);
@@ -52,10 +47,10 @@ CallBackFun* fun;
 
 /******************socket 开始*****************/
 #define nSerPort 10080
-#define nBufMaxSize 1024
+#define nBufMaxSize 10240
 
 DWORD WINAPI ThreadProc(PVOID lpParameter);
-SOCKET ConnectSocket();
+
 
 BOOL InitSocket();
 SOCKET BindListen(int nBackLog);
@@ -63,7 +58,7 @@ SOCKET AcceptConnetion(SOCKET hSocket);
 BOOL ClientConFun(SOCKET sd);
 BOOL CloseConnect(SOCKET sd);
 void MyTcpServeFun();
-SOCKET g_hServer;
+SOCKET g_hClient;
 /******************socket 结束*****************/
 
 
@@ -72,16 +67,8 @@ SOCKET g_hServer;
 BOOL CallBackSendMsg(LPSTR data, DWORD size);
 
 LPCSTR g_lpUserInfo;
+
 BOOL SendMsgText(LPCSTR lpJsonData);
-
-VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize);
-DWORD GetWxMemoryInt(HANDLE hProcess, DWORD baseAddress);
-VOID GetContactInfo(DWORD roomAddress, rapidjson::Value* pVData);
-
-//获取群组信息
-BOOL GetChatRoomList();
-VOID GetChatRoomInfo(DWORD roomAddress, rapidjson::Value* pVData);
-
 
 list<int> nodeAddressList;
 vector<DWORD> nodeAddressVector;
@@ -91,7 +78,7 @@ rapidjson::Document doc;
 rapidjson::StringBuffer  g_sb;
 
 BOOL GetUserInfo();
-BOOL GetContactList();
+
 /****************** 业务 结束*****************/
 
 
@@ -240,9 +227,131 @@ BOOL InjectWechat(LPCSTR szDllPath) {
 /************* Socket 开始**************/
 
 
+//新线程，开启socket
+DWORD WINAPI ThreadProc(PVOID lpParameter) {
+
+	DebugLog(TEXT("ThreadProc...\n "));
+
+	//初始化
+	InitSocket();
+	//业务处理
+	MyTcpServeFun();
+
+	////关闭webSocket链接
+	//WSACleanup();
+
+	return 0;
+
+}
+
+BOOL InitSocket() {
+
+	WSADATA wsaData;
+	SOCKET hServer;
+	WORD wVerSion = MAKEWORD(2, 2);
+	if (WSAStartup(wVerSion, &wsaData)) {
+		//如果启动失败
+		DebugLog((char*)"initSocket->WSAStartup error");
+		return FALSE;
+	};
+
+	return TRUE;
+}
+
+//先创建socket，绑定本地地址，然后开始监听
+SOCKET BindListen(int nBackLog) {
+
+	//流式套接字SOCK_STREAM，  TCP协议 IPPROTO_TCP
+	SOCKET hServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (hServer == INVALID_SOCKET) {
+
+		DebugLog((char*)"bind listen->socket error");
+		return INVALID_SOCKET;
+	}
+
+	sockaddr_in addrServer;
+	addrServer.sin_family = AF_INET;
+	addrServer.sin_port = htons(nSerPort);
+	addrServer.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	//绑定
+	int nRet = bind(hServer, (sockaddr*)&addrServer, sizeof(addrServer));
+	if (nRet == SOCKET_ERROR) {
+		DebugLog((char*)"socket 绑定失败");
+		closesocket(hServer);
+		return INVALID_SOCKET;
+	}
+
+	//在socket上进行监听
+	if (listen(hServer, 10) == SOCKET_ERROR) {
+		closesocket(hServer);
+		WSACleanup();
+		DebugLog((char*)"listen错误");
+		return INVALID_SOCKET;
+	}
+
+	return hServer;
+}
+
+SOCKET AcceptConnetion(SOCKET hSocket) {
+
+	sockaddr_in saConnAddr;
+	int nSize = sizeof(saConnAddr);
+
+	SOCKET hClient = accept(hSocket, (LPSOCKADDR)&saConnAddr, &nSize);
+	if (hClient == INVALID_SOCKET) {
+		DebugLog((char*)"AcceptConnetion 错误");
+		return INVALID_SOCKET;
+	}
 
 
+	return hClient;
+}
 
+BOOL ClientConFun(SOCKET sd) {
+
+	DebugLog(TEXT("ClientConFun -> enter"));
+
+	char buf[nBufMaxSize];
+	int nRetByte;
+	//接收来自客户端的数据
+	do {
+		nRetByte = recv(sd, buf, nBufMaxSize, 0);
+		if (nRetByte == SOCKET_ERROR) {
+			DebugLog((char*)"AcceptConnetion 错误\n");
+			return FALSE;
+		}
+		else if (nRetByte != 0) {
+
+			buf[nRetByte] = 0;
+			//cout << "接收到一条数据:" << buf << endl;
+
+			DebugLog(TEXT("ClientConFun -> 接收到一条数据\n"));
+			DebugLog(buf);
+
+			CallBackSendMsg(buf, sizeof(buf));
+
+			//char lpUserInfo[50] = "{\"data\":{},\"type\": 11028}";
+			//int nSize = sizeof(lpUserInfo);
+			//int nTemp = send(sd, buf, nSize, 0);
+			//if (nTemp > 0) {
+			//	continue;
+			//}
+			//else if (nTemp == SOCKET_ERROR) {
+			//	DebugLog((char*)"ClientConFun -> send 错误 \n");
+			//	return FALSE;
+			//}
+			//else
+			//{
+			//	//send返回0，由于此时send < nRetByte，也就是数据还没发送出去，表示客户端被意外被关闭了
+			//	DebugLog((char*)"ClientConFun -> send -> close 错误 \n");
+			//	return FALSE;
+			//}
+		}
+	} while (nRetByte != 0);
+
+	return TRUE;
+}
 
 //发送消息到客户端
 BOOL SocketSendMsg(SOCKET sd, char* buf, int nSize) {
@@ -263,97 +372,6 @@ BOOL SocketSendMsg(SOCKET sd, char* buf, int nSize) {
 	}
 
 }
-
-BOOL InitWeChatSocket(VOID(*RECEIVE)(DWORD, LPSTR, DWORD), VOID(*ACCEPT)(DWORD), VOID(*CLOSE)(DWORD)) {
-
-	fun = (CallBackFun*)malloc(sizeof(CallBackFun));
-	fun->RECEIVE = RECEIVE;
-	fun->ACCEPT = ACCEPT;
-	fun->CLOSE = CLOSE;
-
-
-	//开启socket服务
-	HANDLE hThread = CreateThread(NULL, 0, ThreadProc, NULL, 0, NULL);
-	//if (hThread) {
-	//	CloseHandle(hThread);
-	//}
-
-	return TRUE;
-
-}
-
-//新线程，开启socket
-DWORD WINAPI ThreadProc(PVOID lpParameter) {
-
-	//OutputDebugString(TEXT("WeChatHelper ThreadProc... "));
-
-	//1.建立流式套接字
-	InitSocket();
-	//2.建立连接
-	g_hServer = ConnectSocket();
-
-	DebugLog(TEXT("ClientConFun -> enter"));
-
-	char buf[nBufMaxSize];
-	int nRetByte;
-	//接收来自客户端的数据
-	do {
-		nRetByte = recv(g_hServer, buf, nBufMaxSize, 0);
-		if (nRetByte == SOCKET_ERROR) {
-			DebugLog((char*)"AcceptConnetion 错误\n");
-			return FALSE;
-		}
-		else if (nRetByte != 0) {
-
-			buf[nRetByte] = 0;
-			//cout << "接收到一条数据:" << buf << endl;
-
-			DebugLog(TEXT("ClientConFun -> 接收到一条数据\n"));
-			DebugLog(buf);
-
-			CallBackSendMsg(buf, sizeof(buf));
-
-			char lpUserInfo[50] = "{\"data\":{},\"type\": 11028}";
-			int nSize = sizeof(lpUserInfo);
-			int nTemp = send(g_hServer, buf, nSize, 0);
-			if (nTemp > 0) {
-				continue;
-			}
-			else if (nTemp == SOCKET_ERROR) {
-				DebugLog((char*)"ClientConFun -> send 错误 \n");
-				return FALSE;
-			}
-			else
-			{
-				//send返回0，由于此时send < nRetByte，也就是数据还没发送出去，表示客户端被意外被关闭了
-				DebugLog((char*)"ClientConFun -> send -> close 错误 \n");
-				return FALSE;
-			}
-		}
-	} while (nRetByte != 0);
-
-	return 0;
-
-}
-
-
-BOOL InitSocket() {
-
-
-	WSADATA wsaData;
-	SOCKET hServer;
-	WORD wVerSion = MAKEWORD(2, 2);
-	if (WSAStartup(wVerSion, &wsaData)) {
-		//如果启动失败
-		DebugLog((char*)"initSocket->WSAStartup error");
-		return FALSE;
-	};
-
-	return TRUE;
-
-
-}
-
 
 //关闭一个链接
 BOOL CloseConnect(SOCKET sd) {
@@ -388,26 +406,70 @@ BOOL CloseConnect(SOCKET sd) {
 	return TRUE;
 }
 
-SOCKET ConnectSocket() {
+void MyTcpServeFun() {
 
-	int iRetValue = 0;
-	SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+	SOCKET hSocket = BindListen(1);
+	if (hSocket == INVALID_SOCKET) {
+		DebugLog((char*)"MyTcpSerFun -> bindListen error");
+		return;
+	}
+	while (true) {
 
-	SOCKADDR_IN clientsock_in;
-	clientsock_in.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-	clientsock_in.sin_family = AF_INET;
-	clientsock_in.sin_port = htons(10080);
+		SOCKET hClient = AcceptConnetion(hSocket);
 
-	iRetValue = connect(clientSocket, (SOCKADDR*)&clientsock_in, sizeof(SOCKADDR));//开始连接
+		if (hClient == INVALID_SOCKET) {
+			DebugLog((char*)"MyTcpSerFun -> acceptconnect error");
+			break;
+		}
 
-	//如果连接失败，睡眠一秒，直到成功
-	while (iRetValue == SOCKET_ERROR) {
-		Sleep(1000);
-		iRetValue = connect(clientSocket, (SOCKADDR*)&clientsock_in, sizeof(SOCKADDR));//开始连接
+		g_hClient = hClient;
+
+		//客户端处理
+		if (ClientConFun(hClient) == FALSE) {
+			//break;
+		}
+
+		//关闭一个客户端连接
+		if (CloseConnect(hClient) == FALSE) {
+			//break;
+		}
+
 	}
 
-	return clientSocket;
+	if (closesocket(hSocket) == SOCKET_ERROR) {
+		DebugLog((char*)"mytcpSerFun --> closesocket");
+		return;
+	}
 }
+
+/************* Socket 结束**************/
+
+
+/****************** 回调 开始*****************/
+
+BOOL InitWeChatSocket(VOID(*RECEIVE)(DWORD, LPSTR, DWORD), VOID(*ACCEPT)(DWORD), VOID(*CLOSE)(DWORD)) {
+
+	fun = (CallBackFun*)malloc(sizeof(CallBackFun));
+	fun->RECEIVE = RECEIVE;
+	fun->ACCEPT = ACCEPT;
+	fun->CLOSE = CLOSE;
+
+
+	//开启socket服务
+	HANDLE hThread = CreateThread(NULL, 0, ThreadProc, NULL, 0, NULL);
+	//if (hThread) {
+	//	CloseHandle(hThread);
+	//}
+
+	return TRUE;
+
+}
+
+/****************** 回调 结束*****************/
+
+
+
+
 /****************** 2、业务代码 开始*****************/
 
 //发送消息给回调函数
@@ -455,31 +517,10 @@ BOOL SendWeChatData(DWORD dwClientId, LPCSTR szJsonData) {
 			CallBackSendMsg(rsBuffer);
 		}
 		break;
-		//case MT_DATA_FRIENDS_MSG:
-		//	//获取联系人列表
-		//	rs = GetContactList();
-		//	if (!rs) {
-		//		fun->RECEIVE(1, rsBuffer, sizeof(rsBuffer));
-		//	}
-		//	break;
-		//case MT_DATA_CHATROOMS_MSG:
-		//	rs = GetChatRoomList();
-		//	if (!rs) {
-		//		fun->RECEIVE(1, rsBuffer, sizeof(rsBuffer));
-		//	}
-		//	break;
 	case MT_SEND_TEXTMSG:
 		//发送文本消息
 		SendMsgText(szJsonData);
 		break;
-		//case MT_SEND_CHATROOM_ATMSG:
-		//	//发送at消息
-		//	SendMsgText(szJsonData);
-		//	break;
-		//case MT_SEND_FILEMSG:
-		//	//发送文件
-		//	SendMsgText(szJsonData);
-		//	break;
 	default:
 		DebugLog(TEXT("请输入正确的消息代码"));
 
@@ -494,7 +535,7 @@ BOOL SendWeChatData(DWORD dwClientId, LPCSTR szJsonData) {
 BOOL SendMsgText(LPCSTR lpJsonData) {
 
 	int nSize = strlen(lpJsonData) + 1;
-	return SocketSendMsg(g_hServer, (char*)lpJsonData, nSize);
+	return SocketSendMsg(g_hClient, (char*)lpJsonData, nSize);
 }
 
 //获取登录用户信息
@@ -560,344 +601,6 @@ BOOL GetUserInfo() {
 	return true;
 
 }
-
-////获取联系人
-//BOOL GetContactList() {
-//
-//	//初始化
-//	g_sb.Clear();
-//	nodeAddressList.clear();
-//	nodeAddressVector.clear();
-//	nodeNumber = 0;
-//
-//	//size_t s2 = g_sb.GetSize();
-//	//char temp2[5000] = { 0 };
-//	//memcpy(temp2, (char*)g_sb.GetString(), s2);
-//
-//	char content[4] = { 0 };
-//	DWORD linkPointer = GetWxMemoryInt(g_hProcess, g_WinBaseDddress + CONTACT_ADDR) + CONTACT_OFFSET1 + CONTACT_OFFSET2;
-//
-//
-//	//群链表地址
-//	DWORD headerAddress = GetWxMemoryInt(g_hProcess, linkPointer);
-//
-//	//节点数量
-//	DWORD contractCount = GetWxMemoryInt(g_hProcess, linkPointer + 4);
-//	nodeAddressList.push_front(headerAddress);
-//	nodeAddressVector.push_back(headerAddress);
-//
-//
-//	//三个分支
-//	DWORD header1 = GetWxMemoryInt(g_hProcess, headerAddress);
-//	DWORD header2 = GetWxMemoryInt(g_hProcess, headerAddress + 4);
-//	DWORD header3 = GetWxMemoryInt(g_hProcess, headerAddress + 8);
-//
-//
-//	/*
-//     * 构建RapidJson数据
-//    */
-//	doc.SetObject();
-//	doc.AddMember("type", 11030, doc.GetAllocator());
-//	rapidjson::Value vData(kArrayType);
-//
-//
-//	// 打印群数据
-//	GetContactInfo(header1, &vData);
-//	GetContactInfo(header2, &vData);
-//	GetContactInfo(header3, &vData);
-//
-//	doc.AddMember("data", vData, doc.GetAllocator());
-//
-//
-//	//无空格
-//	/*rapidjson::StringBuffer  sb;*/
-//	rapidjson::Writer<rapidjson::StringBuffer>  writer(g_sb);
-//
-//	////json有空格
-//	//StringBuffer sb;
-//	//PrettyWriter<StringBuffer> writer(sb);
-//	doc.Accept(writer);
-//
-//	//发送消息给回调函数
-//	size_t size = g_sb.GetSize();
-//	CallBackSendMsg((char*)g_sb.GetString(), size);
-//
-//	return true;
-//}
-//
-//VOID GetContactInfo(DWORD roomAddress, rapidjson::Value* pVData) {
-//
-//	for (int i = 0; i < nodeAddressVector.size(); ++i) {
-//		if (roomAddress == nodeAddressVector[i]) {
-//			return;
-//		}
-//	}
-//	nodeAddressVector.push_back(roomAddress);
-//
-//	nodeNumber++;
-//
-//	//三个分支
-//	DWORD header1 = GetWxMemoryInt(g_hProcess, roomAddress);
-//	DWORD header2 = GetWxMemoryInt(g_hProcess, roomAddress + 4);
-//	DWORD header3 = GetWxMemoryInt(g_hProcess, roomAddress + 8);
-//
-//
-//	//联系人账号 wchat_t
-//	wchar_t acount[50] = { 0 };
-//	DWORD accountTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x30);
-//	int accountSizeTemp = (GetWxMemoryInt(g_hProcess, roomAddress + 0x34) + 1 ) * 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)accountTemp, acount, accountSizeTemp, 0);
-//	//_tprintf(TEXT("%s \n"), acount);
-//
-//	//昵称
-//	wchar_t nickname[50] = { 0 };
-//	DWORD nicknameTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x8C);
-//	int nicknameSizeTemp = (GetWxMemoryInt(g_hProcess, roomAddress + 0x90) + 1) *2 ;
-//	ReadProcessMemory(g_hProcess, (LPVOID)nicknameTemp, nickname, nicknameSizeTemp, 0);
-//	//_tprintf(TEXT("%s \n"), nickname);
-//
-//
-//	//头像
-//	wchar_t avatar[200] = { 0 };
-//	DWORD avatarTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x130);
-//	int avatarSizeTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x134) * 2 + 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)avatarTemp, avatar, avatarSizeTemp, 0);
-//
-//
-//
-//	//备注
-//	wchar_t remark[200] = { 0 };
-//	DWORD remarkTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x78);
-//	int remarkSizeTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x7c) * 2 + 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)remarkTemp, remark, remarkSizeTemp, 0);
-//
-//
-//
-//	//构建userinfo数据
-//	rapidjson::Value vUserInfo(kObjectType);
-//
-//
-//	//wxid
-//	
-//	Value vWxid(UnicodeToUtf8(acount), doc.GetAllocator());
-//	vUserInfo.AddMember("wxid", vWxid, doc.GetAllocator());
-//
-//	//nickname
-//	char* nickNameUtf8 = UnicodeToUtf8(nickname);
-//	Value vNickName(nickNameUtf8, doc.GetAllocator());
-//	vUserInfo.AddMember("nickname", vNickName, doc.GetAllocator());
-//
-//	//头像
-//	char* avatarUtf8 = UnicodeToUtf8(avatar);
-//	Value vAvatar(avatarUtf8, doc.GetAllocator());
-//	vUserInfo.AddMember("avatar", vAvatar, doc.GetAllocator());
-//
-//	//备注
-//	char* remarkUtf8 = UnicodeToUtf8(remark);
-//	Value vRemark(remarkUtf8, doc.GetAllocator());
-//	vUserInfo.AddMember("remark", vRemark, doc.GetAllocator());
-//
-//	pVData->PushBack(vUserInfo, doc.GetAllocator());
-//
-//	GetContactInfo(header1, pVData);
-//	GetContactInfo(header2, pVData);
-//	GetContactInfo(header3, pVData);
-//
-//
-//}
-//
-//DWORD GetWxMemoryInt(HANDLE hProcess, DWORD baseAddress) {
-//
-//	BYTE content[4] = { 0 };
-//	ReadProcessMemory(g_hProcess, (LPVOID)baseAddress, content, 4, 0);
-//	return (DWORD)BytesToDword(content);
-//}
-//
-//VOID GetWxMemoryUnicodeString(DWORD baseAddress, int nSize) {
-//
-//
-//	TCHAR content[2000] = { 0 };
-//	ReadProcessMemory(g_hProcess, (LPVOID)baseAddress, content, 2000, 0);
-//
-//	//_tprintf(TEXT("%s \n"), content);
-//}
-//
-//
-////获取群组信息
-//BOOL GetChatRoomList() {
-//
-//	//初始化
-//	g_sb.Clear();
-//	nodeAddressList.clear();
-//	nodeAddressVector.clear();
-//	nodeNumber = 0;
-//
-//	//nodeAddressVector.swap(vector<DWORD>());
-//
-//
-//	//list<int> nodeAddressList;
-//	//vector<DWORD> nodeAddressVector;
-//
-//
-//
-//	char content[4] = { 0 };
-//	DWORD linkPointer = GetWxMemoryInt(g_hProcess, g_WinBaseDddress + CHATROOM_ADDR) + CHATROOM_OFFSET1 + CHATROOM_OFFSET2;
-//	
-//	//群链表地址
-//	DWORD headerAddress = GetWxMemoryInt(g_hProcess, linkPointer);
-//
-//	//节点数量
-//	DWORD contractCount = GetWxMemoryInt(g_hProcess, linkPointer + 4);
-//	nodeAddressList.push_front(headerAddress);
-//	nodeAddressVector.push_back(headerAddress);
-//
-//
-//	//三个分支
-//	DWORD header1 = GetWxMemoryInt(g_hProcess, headerAddress);
-//	DWORD header2 = GetWxMemoryInt(g_hProcess, headerAddress + 4);
-//	DWORD header3 = GetWxMemoryInt(g_hProcess, headerAddress + 8);
-//
-//
-//	/*
-//	 * 构建RapidJson数据
-//	*/
-//	doc.SetObject();
-//	doc.AddMember("type", MT_DATA_CHATROOMS_MSG, doc.GetAllocator());
-//	rapidjson::Value vData(kArrayType);
-//
-//
-//	// 打印群数据
-//	GetChatRoomInfo(header1, &vData);
-//	GetChatRoomInfo(header2, &vData);
-//	GetChatRoomInfo(header3, &vData);
-//
-//	doc.AddMember("data", vData, doc.GetAllocator());
-//
-//
-//	//无空格
-//	/*rapidjson::StringBuffer  sb;*/
-//	rapidjson::Writer<rapidjson::StringBuffer>  writer(g_sb);
-//
-//	////json有空格
-//	//StringBuffer sb;
-//	//PrettyWriter<StringBuffer> writer(sb);
-//	doc.Accept(writer);
-//
-//	//发送消息给回调函数
-//	size_t size = g_sb.GetSize();
-//	CallBackSendMsg((char*)g_sb.GetString(), size);
-//
-//	return true;
-//}
-//
-//VOID GetChatRoomInfo(DWORD roomAddress, rapidjson::Value* pVData) {
-//
-//	for (int i = 0; i < nodeAddressVector.size(); ++i) {
-//		if (roomAddress == nodeAddressVector[i]) {
-//			return;
-//		}
-//	}
-//	nodeAddressVector.push_back(roomAddress);
-//
-//	nodeNumber++;
-//
-//	//三个分支
-//	DWORD header1 = GetWxMemoryInt(g_hProcess, roomAddress);
-//	DWORD header2 = GetWxMemoryInt(g_hProcess, roomAddress + 4);
-//	DWORD header3 = GetWxMemoryInt(g_hProcess, roomAddress + 8);
-//
-//    
-//	//0x10 群号
-//	//0x28 群号
-//	//0x3c 好友id list
-//	//0x6c 群主wxid
-//	//0x84 在群中的昵称
-//
-//	//群号 wchat_t
-//	wchar_t wxid[50] = { 0 };
-//	DWORD dwTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x10);
-//	int nSize = (GetWxMemoryInt(g_hProcess, roomAddress + 0x14) + 1) * 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)dwTemp, wxid, nSize, 0);
-//
-//
-//	//群主wxid
-//	wchar_t owner[50] = { 0 };
-//	dwTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x6C);
-//	nSize = (GetWxMemoryInt(g_hProcess, roomAddress + 0x70) + 1) * 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)dwTemp, owner, nSize, 0);
-//
-//
-//	//在群中的昵称
-//	wchar_t nickname[200] = { 0 };
-//	dwTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x84);
-//	nSize = GetWxMemoryInt(g_hProcess, roomAddress + 0x88) * 2 + 2;
-//	ReadProcessMemory(g_hProcess, (LPVOID)dwTemp, nickname, nSize, 0);
-//
-//	//群成员list
-//	//char memberList[3000] = { 0 };
-//	LPSTR memberList = (LPSTR)new char[300000];
-//	ZeroMemory(memberList, 300000);
-//	dwTemp = GetWxMemoryInt(g_hProcess, roomAddress + 0x3C);
-//	ReadProcessMemory(g_hProcess, (LPVOID)dwTemp, memberList, 300000, 0);
-//
-//
-//
-//	//构建vRoomInfo数据
-//	rapidjson::Value vRoomInfo(kObjectType);
-//
-//	//wxid
-//	char* wxidUtf8 = UnicodeToUtf8(wxid);
-//	Value vWxid(wxidUtf8, doc.GetAllocator());
-//	vRoomInfo.AddMember("wxid", vWxid, doc.GetAllocator());
-//
-//	//群主
-//	char* ownerUtf8 = UnicodeToUtf8(owner);
-//	Value vOwnerUtf8(ownerUtf8, doc.GetAllocator());
-//
-//
-//	const char flag[3] = "^G";
-//	char* wxidItem;
-//
-//
-//	/* 获取第一个子字符串 */
-//	wxidItem = strtok(memberList, flag);
-//
-//	/* 继续获取其他的子字符串 */
-//	Value array1(kArrayType);
-//	while (wxidItem != NULL) {
-//
-//		Value string_object(kObjectType);
-//		size_t nSize = strlen(wxidItem);
-//		string_object.SetString(wxidItem, nSize, doc.GetAllocator());
-//		array1.PushBack(string_object, doc.GetAllocator());
-//		wxidItem = strtok(NULL, flag);
-//	}
-//
-//
-//
-//	vRoomInfo.AddMember("manager_wxid", vOwnerUtf8, doc.GetAllocator());
-//
-//	//在群中的昵称
-//	char* nicknameUtf8 = UnicodeToUtf8(nickname);
-//	Value vAvatar(nicknameUtf8, doc.GetAllocator());
-//	vRoomInfo.AddMember("nickname", vAvatar, doc.GetAllocator());
-//
-//	//成员id list
-//
-//	//处理数组，变成
-//
-//	Value vRemark(memberList, doc.GetAllocator());
-//	vRoomInfo.AddMember("member_list", vRemark, doc.GetAllocator());
-//
-//	pVData->PushBack(vRoomInfo, doc.GetAllocator());
-//
-//	GetChatRoomInfo(header1, pVData);
-//	GetChatRoomInfo(header2, pVData);
-//	GetChatRoomInfo(header3, pVData);
-//
-//
-//}
-//
 
 
 

@@ -44,23 +44,20 @@ int _tmain(int argc, _TCHAR* argv[])
     //加载Dll
     HINSTANCE   hModule = LoadLibraryW(L"11-WxLoader.dll");
 
-    //注入Dll
-    lpInjectWechat InjectWechat = (lpInjectWechat)GetProcAddress(hModule, "InjectWechat");
-    char DLLFileName[] = "C:\\project\\MyWeChat\\PcWxSingle\\Debug\\12-WxHelper.dll";
-    std::cout << "注入DLL：" << InjectWechat(DLLFileName) << endl;
-
-
-    Sleep(1000);
-
     //初始化
     BOOL rs = FALSE;
     InitFn InitWeChatSocket = (InitFn)GetProcAddress(hModule, "InitWeChatSocket");
     rs = InitWeChatSocket(receive, accept, close);
     std::cout << "初始化结果：" << rs << endl;
 
-    //	while(1)
-    Sleep(1000);
 
+    //注入Dll
+    lpInjectWechat InjectWechat = (lpInjectWechat)GetProcAddress(hModule, "InjectWechat");
+    char DLLFileName[] = "C:\\project\\MyWeChat\\PcWxSingle\\Debug\\12-WxHelper.dll";
+    std::cout << "注入DLL：" << InjectWechat(DLLFileName) << endl;
+
+    ////休眠1秒，等Socket连接
+    Sleep(1000);
 
     DWORD dwClientId = 1;
     lpSendFn SendWeChatData = (lpSendFn)GetProcAddress(hModule, "SendWeChatData");
@@ -71,11 +68,7 @@ int _tmain(int argc, _TCHAR* argv[])
     LPCSTR lpUserInfo = "{\"data\":{},\"type\": 11028}";
     SendWeChatData(dwClientId, lpUserInfo);
 
-    //Sleep(1000);
-
-    //printf("发送文本消息。\n");
-    //LPCSTR lpSendMsgText = "{\"data\": {\"to_wxid\": \"wxid_4j4mqsuzdgie22\",\"content\": \"你好\" },\"type\": 11036}";
-    //SendWeChatData(dwClientId, lpSendMsgText);
+    Sleep(1000);
 
 
 
