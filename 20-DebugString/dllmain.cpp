@@ -83,6 +83,7 @@ VOID OpenDebugString(HMODULE hModule)
 	//覆盖数据
 	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, jmpCode, 5, 0);
 }
+
 __declspec(naked) VOID OutPutDebugStr(DWORD oldESP)
 {
 	_asm
@@ -106,6 +107,7 @@ __declspec(naked) VOID OutPutDebugStr(DWORD oldESP)
 		jmp jumBackAddress
 	}
 }
+
 void WriteDebugString(DWORD oldESP)
 {
 	DWORD logAddress = *((int*)oldESP);
