@@ -45,10 +45,23 @@ string myWxId = "";
 
 CHAR originalCode[5] = { 0 };
 
-DWORD g_moveAddr = 0x66553C50;
-DWORD g_hookOffsetAddr = 0x3CD5A5;
-DWORD g_jumBackOffsetAddr = 0x3CD5AB;
+//DWORD g_moveAddr = 0x66553C50;
+//DWORD g_hookOffsetAddr = 0x3CD5A5;
+//DWORD g_jumBackOffsetAddr = 0x3CD5AB;
+//DWORD g_jumBackAddr = 0;
+
+
+DWORD g_hookOffsetAddr = 0x3C9CD2;
+DWORD g_jumBackOffsetAddr = 0x3C9CD7;
 DWORD g_jumBackAddr = 0;
+
+DWORD g_callAddress = 0x78205A30;
+
+//#define MsgTypeOffset 0x30				//消息类型的偏移 
+//#define MsgContentOffset 0x68			//消息内容的偏移 
+//#define MsgSourceOffset 0x1B8			//消息来源的偏移 
+//#define WxidOffset 0x308				//微信ID/群ID偏移 	
+//#define GroupMsgSenderOffset 0x164		//群消息发送者偏移
 
 
 //使用VS+Detours调试，必须一个没用的导出函数
@@ -185,12 +198,18 @@ __declspec(naked) VOID RecieveMsgHook(DWORD dEsp)
 
 	__asm
 	{
-		//执行wx程序代码
-		mov ecx, g_moveAddr
-		push edi
 
-		//提取esp寄存器内容，放在一个变量中
-		mov dEsp, esp
+		////第一版
+		////执行wx程序代码
+		//mov ecx, g_moveAddr
+		//push edi
+
+		////提取esp寄存器内容，放在一个变量中
+		//mov dEsp, esp
+
+		//第二版
+		mov dEsp, eax
+		
 
 		//保存寄存器
 		pushad
@@ -207,7 +226,7 @@ __declspec(naked) VOID RecieveMsgHook(DWORD dEsp)
 		popf
 		popad
 
-		//跳回 66A0D50B    FF50 08         call dword ptr ds:[eax+0x8]
+		call g_callAddress
 		jmp g_jumBackAddr
 	}
 }
@@ -217,6 +236,10 @@ VOID RecieveMsg(DWORD dEsp)
 
 
 	//0x38：如果是文件 0x38是7，如果是：链接、转账、文章 0x38是2
+
+		//[[esp]]
+	DWORD msgAddress = dEsp;
+
 
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
@@ -241,12 +264,12 @@ VOID RecieveMsg(DWORD dEsp)
 	wstring receivedMessage = TEXT("");
 	BOOL isFriendMsg = FALSE;
 	
-	//[[esp]]
-	DWORD** msgAddress = (DWORD**)dEsp;
+
 
 	//消息类型[[esp]]+0x30
 	//[01文字] [03图片] [31 文件、转账、XML信息] [22语音消息] [02B视频信息][2710红包]
-	DWORD msgType = *((DWORD*)(**msgAddress + msgTypeOffset));
+	//DWORD msgType = *((DWORD*)(**msgAddress + msgTypeOffset));
+	DWORD msgType = *((DWORD*)(msgAddress + msgTypeOffset));
 	receivedMessage.append(TEXT("消息类型:"));
 	switch (msgType)
 	{
@@ -330,7 +353,7 @@ VOID RecieveMsg(DWORD dEsp)
 	//相关信息
 	wstring msgSource2 = TEXT("<msgsource />\n");
 	wstring msgSource = TEXT("");
-	msgSource.append(GetMsgByAddress(**msgAddress + atFriendOffst));
+	msgSource.append(GetMsgByAddress(msgAddress + atFriendOffst));
 
 	if (msgSource.length() <= msgSource2.length())
 	{
@@ -348,17 +371,17 @@ VOID RecieveMsg(DWORD dEsp)
 	if (isFriendMsg == TRUE)
 	{
 		receivedMessage.append(TEXT("发送人ID：\r\n"))
-			.append(GetMsgByAddress(**msgAddress + friendOffset))
+			.append(GetMsgByAddress(msgAddress + friendOffset))
 			.append(TEXT("\r\n\r\n"));
 	}
 	else
 	{
 		receivedMessage.append(TEXT("群ID：\r\n"))
-			.append(GetMsgByAddress(**msgAddress + friendOffset))
+			.append(GetMsgByAddress(msgAddress + friendOffset))
 			.append(TEXT("\r\n\r\n"));
 
 		receivedMessage.append(TEXT("发送人ID: \r\n"))
-			.append(GetMsgByAddress(**msgAddress + roomMsgSenderOffset))
+			.append(GetMsgByAddress(msgAddress + roomMsgSenderOffset))
 			.append(TEXT("\r\n\r\n"));
 
 		receivedMessage.append(TEXT("at消息: \r\n"));
@@ -367,17 +390,17 @@ VOID RecieveMsg(DWORD dEsp)
 	}
 
 	receivedMessage.append(TEXT("消息内容: \r\n"))
-		.append(GetMsgByAddress(**msgAddress + msgOffset))
+		.append(GetMsgByAddress(msgAddress + msgOffset))
 		.append(TEXT("\r\n\r\n"));
 
 
-	receivedMessage.append(TEXT("文件存储路径: \r\n"))
-		.append(GetMsgByAddress(**msgAddress + filePathOffset))
-		.append(TEXT("\r\n\r\n"));
+	//receivedMessage.append(TEXT("文件存储路径: \r\n"))
+	//	.append(GetMsgByAddress(**msgAddress + filePathOffset))
+	//	.append(TEXT("\r\n\r\n"));
 
-	receivedMessage.append(TEXT("unkunow:\r\n"))
-		.append(GetMsgByAddress(**msgAddress + unknown1))
-		.append(TEXT("\r\n\r\n"));
+	//receivedMessage.append(TEXT("unkunow:\r\n"))
+	//	.append(GetMsgByAddress(**msgAddress + unknown1))
+	//	.append(TEXT("\r\n\r\n"));
 
 
 	//文本框输出信息
