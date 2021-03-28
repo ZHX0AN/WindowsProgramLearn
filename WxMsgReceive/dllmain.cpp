@@ -54,14 +54,7 @@ CHAR originalCode[5] = { 0 };
 DWORD g_hookOffsetAddr = 0x3C9CD2;
 DWORD g_jumBackOffsetAddr = 0x3C9CD7;
 DWORD g_jumBackAddr = 0;
-
 DWORD g_callAddress = 0x78205A30;
-
-//#define MsgTypeOffset 0x30				//消息类型的偏移 
-//#define MsgContentOffset 0x68			//消息内容的偏移 
-//#define MsgSourceOffset 0x1B8			//消息来源的偏移 
-//#define WxidOffset 0x308				//微信ID/群ID偏移 	
-//#define GroupMsgSenderOffset 0x164		//群消息发送者偏移
 
 
 //使用VS+Detours调试，必须一个没用的导出函数

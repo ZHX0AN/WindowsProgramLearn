@@ -184,7 +184,6 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 	ReadProcessMemory(hProcess, (LPVOID)wxIdAddr, wxId, 50, 0);
 	userInfo.wxid = wxId;
 
-	//ReadProcessMemory(hProcess, (LPVOID)userInfo.wxid, wxId, 50, 0);
 
 	TCHAR tempBuf[200] = { 0 };
 	int nRet = MultiByteToWideChar(CP_ACP, 0, (char*)wxId, 100, tempBuf, 200);
@@ -196,6 +195,16 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 	char name[100] = { 0 };
 	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name, 100, 0);
 
+	//如果名字中存在emoji，则name存的是个一级指针，指向真正的地址
+	int iSize = strlen(name);
+	if (iSize == 4) {
+		BYTE pNameReal[4] = { 0 };
+		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), pNameReal, 4, 0);
+		DWORD dNameReal = bytesToInt(pNameReal);
+		memset(name,0,100);
+		ReadProcessMemory(hProcess, (LPVOID)(dNameReal), name, 100, 0);
+
+	}
 	TCHAR* content = UTF8ToUnicode(name);
 	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字: %s\r\n"), content);
 
