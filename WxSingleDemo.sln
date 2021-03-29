@@ -29,7 +29,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "20-DebugString", "20-DebugS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "08-GetChatRoomMember", "08-GetChatRoomMember\08-GetChatRoomMember.vcxproj", "{F0F39249-C237-4D85-B475-5D31A22FAF33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "05-GetUserInfoCSharp", "05-GetUserInfoCSharp\05-GetUserInfoCSharp.csproj", "{94370FFA-1290-4A1F-B785-213A4C713056}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "05-GetUserInfoCSharp", "05-GetUserInfoCSharp\05-GetUserInfoCSharp.csproj", "{94370FFA-1290-4A1F-B785-213A4C713056}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "09-GetVersion", "09-GetVersion\09-GetVersion.vcxproj", "{1AC709B6-3CCA-402F-BE65-97CE26854B08}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -173,6 +175,16 @@ Global
 		{94370FFA-1290-4A1F-B785-213A4C713056}.Release|x64.Build.0 = Release|Any CPU
 		{94370FFA-1290-4A1F-B785-213A4C713056}.Release|x86.ActiveCfg = Release|Any CPU
 		{94370FFA-1290-4A1F-B785-213A4C713056}.Release|x86.Build.0 = Release|Any CPU
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Debug|x64.ActiveCfg = Debug|x64
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Debug|x64.Build.0 = Debug|x64
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Debug|x86.ActiveCfg = Debug|Win32
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Debug|x86.Build.0 = Debug|Win32
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Release|Any CPU.ActiveCfg = Release|Win32
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Release|x64.ActiveCfg = Release|x64
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Release|x64.Build.0 = Release|x64
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Release|x86.ActiveCfg = Release|Win32
+		{1AC709B6-3CCA-402F-BE65-97CE26854B08}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
