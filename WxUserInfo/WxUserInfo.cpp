@@ -191,22 +191,26 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 
 	
 
-	//nickname
+	//先读前四个字节，作为指针获取昵称值，如果读到值，则返回值；如果没有值表示不是指针，读昵称出来。
+	BYTE nameJudge[4] = { 0 };
+	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), nameJudge, 4, 0);
+	DWORD dNameReal = bytesToInt(nameJudge);
 	char name[100] = { 0 };
-	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name, 100, 0);
+	ReadProcessMemory(hProcess, (LPVOID)(dNameReal), name, 100, 0);
 
-	//如果名字中存在emoji，则name存的是个一级指针，指向真正的地址
-	int iSize = strlen(name);
-	if (iSize == 4) {
-		BYTE pNameReal[4] = { 0 };
-		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), pNameReal, 4, 0);
-		DWORD dNameReal = bytesToInt(pNameReal);
-		memset(name,0,100);
-		ReadProcessMemory(hProcess, (LPVOID)(dNameReal), name, 100, 0);
-
+	int nNameSize = strlen(name);
+	if (nNameSize >0) {
+		TCHAR* content2 = UTF8ToUnicode(name);
+		AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字2: %s\r\n"), content2);
 	}
-	TCHAR* content = UTF8ToUnicode(name);
-	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字: %s\r\n"), content);
+	else {
+
+		char name2[100] = { 0 };
+		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name2, 100, 0);
+		TCHAR* content1 = UTF8ToUnicode(name2);
+		AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字1: %s\r\n"), content1);
+	}
+
 
 
 
