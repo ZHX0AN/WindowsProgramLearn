@@ -54,8 +54,8 @@ CHAR originalCode[5] = { 0 };
 DWORD g_hookOffsetAddr = 0x3C9CD2;
 DWORD g_jumBackOffsetAddr = 0x3C9CD7;
 DWORD g_jumBackAddr = 0;
-DWORD g_callAddress = 0x78205A30;
-
+DWORD g_callAddressOffsetAddr = 0x85A30;
+DWORD g_callAddress = 0;
 
 //使用VS+Detours调试，必须一个没用的导出函数
 VOID __declspec(dllexport) Test()
@@ -152,6 +152,7 @@ VOID HookWx()
 	int hookAddress = wxBaseAddress + g_hookOffsetAddr;
 
 	g_jumBackAddr = wxBaseAddress + g_jumBackOffsetAddr;
+	g_callAddress = wxBaseAddress + g_callAddressOffsetAddr ;
 
 
 	//组装跳转数据
