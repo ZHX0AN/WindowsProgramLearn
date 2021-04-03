@@ -29,6 +29,7 @@ void UnLoad(HMODULE module) {
 //7B493420    E8 9F619300     call WeChatWi.7BDC95C4                   ; 日志HOOK
 
 void PrintLogger(DWORD eax);
+
 DWORD LoggerCallAddress = Util->Offset(0x7BDC95C4 - 0x7AF20000);
 DWORD LoggerHookAddress = Util->Offset(0x7B493420 - 0x7AF20000);
 DWORD LoggerReturnAddress = LoggerHookAddress + 5;

@@ -7,7 +7,13 @@
 #include <sstream>
 #include <string>
 #include <tchar.h>
+#include <sstream>
+#include <iostream>
+#include <CommCtrl.h>
+#include<fstream>
+#include<iomanip>
 
+using namespace std;
 
 DWORD wxBaseAddress = 0;
 DWORD jumBackAddress = 0;
@@ -18,6 +24,7 @@ VOID OpenDebugString(HMODULE hModule);
 VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 
 HWND g_hwnd;
+ofstream outFile;
 
 //3.1.0.72
 
@@ -42,7 +49,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
-        break;
+	{
+		
+		break;
+	}
+
     }
     return TRUE;
 }
@@ -50,6 +61,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 VOID OpenDebugString(HMODULE hModule)
 {
+
+
 	//获取WeChatWin.dll的基址
 	while (wxBaseAddress == 0)
 	{
@@ -120,27 +133,37 @@ __declspec(naked) VOID OutPutDebugStr(DWORD oldESP)
 	}
 }
 
+VOID SaveToTxtFie(string str)
+{
+
+	ofstream outFile;
+	outFile.open("C:\\temp\\carinfo.txt", std::ofstream::out | std::ofstream::app);
+
+	outFile << str << endl;
+	//outFile << "Year: "  << endl;
+	//outFile << "was asking $"  << endl;
+	//outFile << "Now asking $"  << endl;
+	
+	outFile.close(); //关闭文本文件
+}
+
 void WriteDebugString(DWORD oldESP)
 {
 	DWORD logAddress = *((int*)oldESP);
 	char buffer[0x1000] = { 0 };
 	ReadProcessMemory(GetCurrentProcess(), (LPCVOID)logAddress, buffer, 0x1000, 0);
+	
+	string str = buffer;
 
-	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("打开WeChat失败\r\n"));
-
-	OutputDebugStringA(buffer);
+	SaveToTxtFie(str);
+	//OutputDebugStringA(buffer);
 }
 
 
 
-VOID AddText(HWND hwnd, PCTSTR pszFormat, ...) {
 
-	va_list argList;
-	va_start(argList, pszFormat);
 
-	TCHAR sz[7 * 1024];
-	Edit_GetText(hwnd, sz, _countof(sz));
-	_vstprintf_s(_tcschr(sz, TEXT('\0')), _countof(sz) - _tcslen(sz), pszFormat, argList);
-	Edit_SetText(hwnd, sz);
-	va_end(argList);
-}
+
+
+
+
