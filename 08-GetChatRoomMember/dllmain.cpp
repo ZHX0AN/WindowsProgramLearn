@@ -191,6 +191,8 @@ void ShowChatRoomUser(wchar_t* chatroomwxid)
 	wchar_t tempWxid[0x100] = { 0 };
 	char tempWxidA[0x100] = { 0 };
 	DWORD userList = *((DWORD*)dwWxidArr);		//userList这个里面的微信ID列表 3.1是ASCII格式的微信ID
+
+	wchar_t test77[0x100] = L"11111111111111111";
 	DWORD testTmp = dwWxidArr + 0xB4;
 	int Len = *((int*)testTmp);				//取到微信ID的个数
 
@@ -261,13 +263,9 @@ void GetUserInfoByWxid(wchar_t* userwxid)
 		popad
 	}
 
-
-
 	LPVOID lpWxid = *((LPVOID*)((DWORD)buff + 0x20));				//微信ID
 	LPVOID lpWxcount = *((LPVOID*)((DWORD)buff + 0x34));			//微信账号
 	LPVOID lpNickName = *((LPVOID*)((DWORD)buff + 0x7C));			//昵称
-
-
 
 
 	//组装结构体
@@ -275,16 +273,6 @@ void GetUserInfoByWxid(wchar_t* userwxid)
 	swprintf_s(userinfo->UserId, L"%s", (wchar_t*)lpWxid);
 	swprintf_s(userinfo->UserNickName, L"%s", (wchar_t*)lpNickName);
 	swprintf_s(userinfo->UserNumber, L"%s", (wchar_t*)lpWxcount);
-
-
-
-	//发送到客户端
-	HWND hWnd = FindWindow(NULL, TEXT("ChatRoomMember"));
-	if (hWnd == NULL)
-	{
-		OutputDebugStringA("未查找到ChatRoomMember窗口");
-		return;
-	}
 
 
 	//COPYDATASTRUCT userinfodata;

@@ -1,5 +1,13 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <windowsx.h>
+#include <StrSafe.h> 
+#include <sstream>
+#include <string>
+#include <tchar.h>
+
 
 DWORD wxBaseAddress = 0;
 DWORD jumBackAddress = 0;
@@ -7,7 +15,9 @@ DWORD callAddress = 0;
 void WriteDebugString(DWORD oldESP);
 VOID OutPutDebugStr(DWORD oldESP);
 VOID OpenDebugString(HMODULE hModule);
+VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 
+HWND g_hwnd;
 
 //3.1.0.72
 
@@ -20,6 +30,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
 	{
+
+		
 		HANDLE hANDLE = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)OpenDebugString, hModule, NULL, 0);
 		if (hANDLE != 0)
 		{
@@ -114,5 +126,21 @@ void WriteDebugString(DWORD oldESP)
 	char buffer[0x1000] = { 0 };
 	ReadProcessMemory(GetCurrentProcess(), (LPCVOID)logAddress, buffer, 0x1000, 0);
 
+	AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("打开WeChat失败\r\n"));
+
 	OutputDebugStringA(buffer);
+}
+
+
+
+VOID AddText(HWND hwnd, PCTSTR pszFormat, ...) {
+
+	va_list argList;
+	va_start(argList, pszFormat);
+
+	TCHAR sz[7 * 1024];
+	Edit_GetText(hwnd, sz, _countof(sz));
+	_vstprintf_s(_tcschr(sz, TEXT('\0')), _countof(sz) - _tcslen(sz), pszFormat, argList);
+	Edit_SetText(hwnd, sz);
+	va_end(argList);
 }
