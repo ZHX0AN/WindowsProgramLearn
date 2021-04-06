@@ -39,6 +39,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "50-HiLog", "50-HiLog\50-HiL
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02-RecvMsg", "02-RecvMsg\02-RecvMsg.vcxproj", "{F7190222-EA08-4BD4-8380-7010C304D3EB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "15-SQLiteLearn", "15-SQLiteLearn\15-SQLiteLearn.vcxproj", "{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "16-SQLiteHandle", "16-SQLiteHandle\16-SQLiteHandle.vcxproj", "{3675BA15-0D01-4230-B503-F428A364FD7E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -221,6 +225,26 @@ Global
 		{F7190222-EA08-4BD4-8380-7010C304D3EB}.Release|x64.Build.0 = Release|x64
 		{F7190222-EA08-4BD4-8380-7010C304D3EB}.Release|x86.ActiveCfg = Release|Win32
 		{F7190222-EA08-4BD4-8380-7010C304D3EB}.Release|x86.Build.0 = Release|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Debug|x64.ActiveCfg = Debug|x64
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Debug|x64.Build.0 = Debug|x64
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Debug|x86.ActiveCfg = Debug|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Debug|x86.Build.0 = Debug|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Release|Any CPU.ActiveCfg = Release|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Release|x64.ActiveCfg = Release|x64
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Release|x64.Build.0 = Release|x64
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Release|x86.ActiveCfg = Release|Win32
+		{363C78EE-08F6-4A1E-BEDD-F1857F5541EC}.Release|x86.Build.0 = Release|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Debug|x64.ActiveCfg = Debug|x64
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Debug|x64.Build.0 = Debug|x64
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Debug|x86.ActiveCfg = Debug|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Debug|x86.Build.0 = Debug|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Release|Any CPU.ActiveCfg = Release|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Release|x64.ActiveCfg = Release|x64
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Release|x64.Build.0 = Release|x64
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Release|x86.ActiveCfg = Release|Win32
+		{3675BA15-0D01-4230-B503-F428A364FD7E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

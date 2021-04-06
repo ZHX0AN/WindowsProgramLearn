@@ -136,6 +136,10 @@ __declspec(naked) VOID OutPutDebugStr(DWORD oldESP)
 VOID SaveToTxtFie(string str)
 {
 
+	if (str.length() ==0 ) {
+		return;
+	}
+
 	ofstream outFile;
 	outFile.open("C:\\temp\\carinfo.txt", std::ofstream::out | std::ofstream::app);
 
