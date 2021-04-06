@@ -27,6 +27,22 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 BOOL IsWxVersionValid();
 VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 wchar_t* AnsiToUnicode(const char* szStr);
+char* UnicodeToAnsi(const wchar_t* szStr);
+DWORD BytesToDword(BYTE* bytes);
+void execSql();
+
+
+typedef int(__cdecl* sqlite3_callback)(void*, int, char**, char**);
+typedef int(__cdecl* Sqlite3_exec)(
+	DWORD,                /* The database on which the SQL executes */
+	const char*,           /* The SQL to be executed */
+	sqlite3_callback, /* Invoke this callback routine */
+	void*,                 /* First argument to xCallback() */
+	char**             /* Write error messages here */
+	);
+int __cdecl MyCallback(void* para, int nColumn, char** colValue, char** colName);//回调函数
+
+
 
 //定时器ID
 DWORD dwTimeId = 0;
@@ -40,6 +56,8 @@ const string wxVersoin = "3.1.0.72";
 DWORD dbCount = 0;
 
 DWORD g_hookAddress = 0x515733;
+
+#define SQLITE_DBHANDLER_EXEC 0x1
 
 ////定义变量
 DWORD wxBaseAddress = 0;
@@ -106,6 +124,11 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 	}
 		
 	case WM_COMMAND:
+		if (wParam == IDOK)
+		{
+
+			execSql();
+		}
 		break;
 	case WM_CLOSE:
 		EndDialog(hwndDlg, 0);
@@ -116,6 +139,54 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 	return FALSE;
 }
 
+
+void execSql() {
+
+
+	//组装wxid数据
+	WCHAR wHandle[20];
+	UINT uINT = GetDlgItemText(g_hwndDlg, IDC_TEXT_HANDLE, wHandle, 20);
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写句柄", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	WCHAR wSql[500];
+	uINT = GetDlgItemText(g_hwndDlg, IDC_TEXT_SQL, wSql, 500);
+	if (uINT == 0)
+	{
+		MessageBoxA(NULL, "请填写sql", "错误", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	char* handleStr = UnicodeToAnsi(wHandle);
+
+
+	DWORD dHandle = BytesToDword((BYTE*)handleStr);
+	char* sql = UnicodeToAnsi(wSql);
+
+	//调用sqlite3_exec函数查询数据库
+	Sqlite3_exec sqlite3_exec = (Sqlite3_exec)(wxBaseAddress + SQLITE_DBHANDLER_EXEC);
+	DWORD i = sqlite3_exec(dHandle, sql, MyCallback, NULL, NULL);
+
+
+	
+
+}
+
+int __cdecl MyCallback(void* para, int nColumn, char** colValue, char** colName)
+{
+
+	for (int i = 0; i < nColumn; i++)
+	{
+
+		char* colNameStr = *(colName + i);
+		char* colValueStr = *(colValue + i);
+	}
+
+	return 0;
+}
 
 //开始InlineHook
 void inlineHook()
@@ -323,4 +394,28 @@ wchar_t* AnsiToUnicode(const char* szStr)
 	wchar_t* pResult = new wchar_t[nLen];
 	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, pResult, nLen);
 	return pResult;
+}
+
+
+//wchar_t*ת转char*
+char* UnicodeToAnsi(const wchar_t* szStr)
+{
+	int nLen = WideCharToMultiByte(CP_ACP, 0, szStr, -1, NULL, 0, NULL, NULL);
+	if (nLen == 0)
+	{
+		return NULL;
+	}
+	char* pResult = new char[nLen];
+	WideCharToMultiByte(CP_ACP, 0, szStr, -1, pResult, nLen, NULL, NULL);
+	return pResult;
+}
+
+
+DWORD BytesToDword(BYTE* bytes)
+{
+	DWORD a = bytes[0] & 0xFF;
+	a |= ((bytes[1] << 8) & 0xFF00);
+	a |= ((bytes[2] << 16) & 0xFF0000);
+	a |= ((bytes[3] << 24) & 0xFF000000);
+	return a;
 }
