@@ -28,9 +28,8 @@ BOOL IsWxVersionValid();
 VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 wchar_t* AnsiToUnicode(const char* szStr);
 char* UnicodeToAnsi(const wchar_t* szStr);
-DWORD BytesToDword(BYTE* bytes);
 void execSql();
-
+wchar_t* UTF8ToUnicode(const char* str);
 
 typedef int(__cdecl* sqlite3_callback)(void*, int, char**, char**);
 typedef int(__cdecl* Sqlite3_exec)(
@@ -57,7 +56,7 @@ DWORD dbCount = 0;
 
 DWORD g_hookAddress = 0x515733;
 
-#define SQLITE_DBHANDLER_EXEC 0x1
+#define SQLITE_DBHANDLER_EXEC 0xA5D240
 
 ////定义变量
 DWORD wxBaseAddress = 0;
@@ -161,9 +160,9 @@ void execSql() {
 	}
 
 	char* handleStr = UnicodeToAnsi(wHandle);
+	//DWORD dHandle = atoi(handleStr);
+	DWORD dHandle = strtol(handleStr, NULL, 16);
 
-
-	DWORD dHandle = BytesToDword((BYTE*)handleStr);
 	char* sql = UnicodeToAnsi(wSql);
 
 	//调用sqlite3_exec函数查询数据库
@@ -178,11 +177,18 @@ void execSql() {
 int __cdecl MyCallback(void* para, int nColumn, char** colValue, char** colName)
 {
 
+	SetWindowText(GetDlgItem(g_hwndDlg, IDC_TEXT_MSG), L"");
+
 	for (int i = 0; i < nColumn; i++)
 	{
 
 		char* colNameStr = *(colName + i);
 		char* colValueStr = *(colValue + i);
+
+		wchar_t* wName = UTF8ToUnicode(colNameStr);
+		wchar_t* wValue = UTF8ToUnicode(colValueStr);
+
+		AddText(GetDlgItem(g_hwndDlg, IDC_TEXT_MSG), TEXT("%s, %s \r\n"), wName, wValue);
 	}
 
 	return 0;
@@ -271,7 +277,7 @@ void OutPutData(int dbAddress, int dbHandle)
 	//char转wchar_t
 	wchar_t* path = AnsiToUnicode((char*)dbAddress);
 
-	AddText(GetDlgItem(g_hwndDlg, IDC_TEXT_MSG), TEXT("句柄： 0x%08X ，地址：%s \r\n"), dbHandle, (char*)path);
+	AddText(GetDlgItem(g_hwndDlg, IDC_TEXT_MSG), TEXT("0x%08X，%s \r\n"), dbHandle, (char*)path);
 
 
 	//定时器
@@ -411,11 +417,16 @@ char* UnicodeToAnsi(const wchar_t* szStr)
 }
 
 
-DWORD BytesToDword(BYTE* bytes)
+wchar_t* UTF8ToUnicode(const char* str)
 {
-	DWORD a = bytes[0] & 0xFF;
-	a |= ((bytes[1] << 8) & 0xFF00);
-	a |= ((bytes[2] << 16) & 0xFF0000);
-	a |= ((bytes[3] << 24) & 0xFF000000);
-	return a;
+	int    textlen = 0;
+	wchar_t* result;
+	textlen = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+	result = (wchar_t*)malloc((textlen + 1) * sizeof(wchar_t));
+	if (result != 0)
+	{
+		memset(result, 0, (textlen + 1) * sizeof(wchar_t));
+	}
+	MultiByteToWideChar(CP_UTF8, 0, str, -1, (LPWSTR)result, textlen);
+	return    result;
 }
