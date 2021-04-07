@@ -263,6 +263,8 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 	/*地址跟接收消息一样*/
 
 	DWORD SvridOffset = 0x28;
+	//时间戳
+	DWORD timestampOffset = 0x3C;
 
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
@@ -272,6 +274,9 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 	DWORD roomMsgSenderOffset = 0x164;
 	//消息内容
 	DWORD contentOffset = 0x68;
+
+	//子类型，如果是文件，sub=6
+	DWORD subTypeOffset = 0xEC;
 
 	//好友消息：<msgsource />
 	//群消息: 01023B78  <msgsource>..<silence>0</silence>..<membercount>2</membercount> < / msgsource>
@@ -287,6 +292,8 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 
 	INT64 Svrid = *((INT64*)(r_esi + SvridOffset));
 	DWORD msgType = *((DWORD*)(r_esi + msgTypeOffset));
+	DWORD msgSubType = *((DWORD*)(r_esi + subTypeOffset));
+	DWORD timestamp = *((DWORD*)(r_esi + timestampOffset));
 	wchar_t* wToWxId = GetMsgByAddress2(r_esi + friendOffset);
 	wchar_t* wContent = GetMsgByAddress2(r_esi + contentOffset);
 	wchar_t* wAt = GetMsgByAddress2(r_esi + atFriendOffst);
@@ -294,8 +301,10 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 	wchar_t* wRoomSender = GetMsgByAddress2(r_esi + roomMsgSenderOffset);
 
 	
-	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("Svrid: %x \r\n"), Svrid);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("Svrid: %I64d \r\n"), Svrid);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("时间戳: %I32d \r\n"), timestamp);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("信息类型: %d \r\n"), msgType);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("信息子类型: %d \r\n"), msgSubType);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("接收者: %s \r\n"), wToWxId);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("消息内容: %s \r\n"), wContent);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("AT好友: %s \r\n"), wAt);
