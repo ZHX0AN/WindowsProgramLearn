@@ -9,10 +9,15 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#include <windowsx.h>
 
 using namespace std;
 
 //3.1.0.72
+
+void inlineHook();
+void InlinkHookJump();
+void OutPutData(DWORD);
 
 //声明函数
 VOID ShowDemoUI(HMODULE hModule);
@@ -21,24 +26,29 @@ void SentTextMessage(HWND hwndDlg);
 LPCWSTR String2LPCWSTR(string text);
 string Dec2Hex(DWORD i);
 WCHAR* CharToWChar(char* s);
+wchar_t* AnsiToUnicode(const char* szStr);
+VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
+wchar_t* GetMsgByAddress2(DWORD memAddress);
 
 VOID SentRoomMessageAt(HWND hwndDlg);
 VOID UnLoadMyself();
-
+BOOL JudgeSendStatus();
 
 ////定义变量
 DWORD wxBaseAddress = 0;
 //DWORD g_callAddr = 0x3A0CA0;
 //const int g_msgBuffer = 0x5A8;
 
+HWND g_hwndDlg;
 
 /**
  * 发送文本消息
  */
-#define SEND_MSG_HOOK_ADDRESS 0x3A0CA0	//HOOK消息的内存地址偏移
-#define SEND_MSG_BUFFER 0x5A8	//HOOK消息的内存地址偏移
+#define SEND_MSG_HOOK_ADDRESS 0x3A0CA0	
+#define SEND_MSG_BUFFER 0x5A8	
 
-
+#define SEND_MSG_STATUS_ADDRESS 0x37BD12
+DWORD g_jumpBackAddress = 0;
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -78,7 +88,7 @@ VOID ShowDemoUI(HMODULE hModule)
 
 
 
-	DWORD funAddr = (DWORD)SentRoomMessageAt;
+	DWORD funAddr = (DWORD)OutPutData;
 
 	string funAddrtext = "funAddr：\t";
 	funAddrtext.append(Dec2Hex(funAddr));
@@ -93,6 +103,7 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
+		g_hwndDlg = hwndDlg;
 		break;
 
 	case WM_CLOSE:
@@ -106,9 +117,7 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		{
 			OutputDebugString(TEXT("发送消息按钮被点击"));
 			SentTextMessage(hwndDlg);
-		}
-
-		if (wParam == BTN_SEND_AT)
+		}else if(wParam == BTN_SEND_AT)
 		{
 			OutputDebugString(TEXT("发送at消息 BTN_SEND_AT"));
 
@@ -119,6 +128,10 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 		else if (wParam == IDC_BTN_UNLOAD) {
 			OutputDebugString(TEXT("卸载自己"));
 			UnLoadMyself();
+		}
+		else if (wParam == IDC_BTN_JUDGE) {
+
+			JudgeSendStatus();
 		}
 		break;
 	default:
@@ -166,6 +179,104 @@ string Dec2Hex(DWORD i)
 	ioss >> s_temp;
 	return "0x" + s_temp;
 }
+
+
+
+BOOL JudgeSendStatus() {
+
+
+	DWORD hookAddress = wxBaseAddress + SEND_MSG_STATUS_ADDRESS;
+	g_jumpBackAddress = hookAddress + 6;
+
+
+	//组装跳转数据
+	BYTE JmpCode[6] = { 0 };
+	JmpCode[0] = 0xE9;
+	JmpCode[6 - 1] = 0x90;
+
+	//新跳转指令中的数据=跳转的地址-原地址（HOOK的地址）-跳转指令的长度
+	*(DWORD*)&JmpCode[1] = (DWORD)InlinkHookJump - hookAddress - 5;
+
+	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, JmpCode, 6, 0);
+
+	return true;
+}
+
+//InlineHook完成后，程序在Hook点跳转到这里执行。
+//这里必须是裸函数
+__declspec(naked) void InlinkHookJump()
+{
+	//补充代码
+	__asm
+	{
+		//补充被覆盖的代码
+		mov ecx, dword ptr ss : [ebp - 0x24]
+		add esp, 0x34
+
+		//保存寄存器
+		pushad
+
+
+		//调用我们的处理函数
+		push esi
+		call OutPutData
+		add esp, 4
+
+		//恢复寄存器
+		popad
+
+		//跳回去接着执行
+		jmp g_jumpBackAddress
+	}
+}
+
+void OutPutData(DWORD r_esi)
+{
+
+	/*地址跟接收消息一样*/
+
+	DWORD SvridOffset = 0x28;
+
+	//消息类型
+	DWORD msgTypeOffset = 0x30;
+	//发送人，好友或群ID
+	DWORD friendOffset = 0x40;
+	//群消息，消息发送者
+	DWORD roomMsgSenderOffset = 0x164;
+	//消息内容
+	DWORD contentOffset = 0x68;
+
+	//好友消息：<msgsource />
+	//群消息: 01023B78  <msgsource>..<silence>0</silence>..<membercount>2</membercount> < / msgsource>
+	//群at消息: <msgsource>..<atuserlist>wxid_4sy2barbyny712</atuserlist>..<silence>0</silence>..<membercount>2</membercount>.</msgsource>
+	DWORD atFriendOffst = 0x1b8;
+
+	//610069e565280afcd67ec1edfef1c61d
+	DWORD unknown1 = 0x178;
+
+	//文件存储路径：wxid_4sy2barbyny712\FileStorage\File\2021-03\工作簿1(1).xlsx
+	DWORD filePathOffset = 0x1A0;
+
+
+	INT64 Svrid = *((INT64*)(r_esi + SvridOffset));
+	DWORD msgType = *((DWORD*)(r_esi + msgTypeOffset));
+	wchar_t* wToWxId = GetMsgByAddress2(r_esi + friendOffset);
+	wchar_t* wContent = GetMsgByAddress2(r_esi + contentOffset);
+	wchar_t* wAt = GetMsgByAddress2(r_esi + atFriendOffst);
+	wchar_t* wFilePath = GetMsgByAddress2(r_esi + filePathOffset);
+	wchar_t* wRoomSender = GetMsgByAddress2(r_esi + roomMsgSenderOffset);
+
+	
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("Svrid: %x \r\n"), Svrid);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("信息类型: %d \r\n"), msgType);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("接收者: %s \r\n"), wToWxId);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("消息内容: %s \r\n"), wContent);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("AT好友: %s \r\n"), wAt);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("文件路径: %s \r\n"), wFilePath);
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("群消息发送者: %s \r\n"), wRoomSender);
+
+}
+
 
 
  VOID SentTextMessage(HWND hwndDlg)
@@ -398,3 +509,46 @@ string WcharToString(WCHAR* wchar)
 	return psText;
 }
 
+wchar_t* AnsiToUnicode(const char* szStr)
+{
+	int nLen = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, NULL, 0);
+	if (nLen == 0)
+	{
+		return NULL;
+	}
+	wchar_t* pResult = new wchar_t[nLen];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, pResult, nLen);
+	return pResult;
+}
+
+VOID AddText(HWND hwnd, PCTSTR pszFormat, ...) {
+
+	va_list argList;
+	va_start(argList, pszFormat);
+
+	TCHAR sz[7 * 1024];
+	Edit_GetText(hwnd, sz, _countof(sz));
+	_vstprintf_s(_tcschr(sz, TEXT('\0')), _countof(sz) - _tcslen(sz), pszFormat, argList);
+	Edit_SetText(hwnd, sz);
+	va_end(argList);
+}
+
+// wchar_t 转UTF8
+wchar_t* GetMsgByAddress2(DWORD memAddress)
+{
+	//获取字符串长度
+	DWORD msgLength = *(DWORD*)(memAddress + 4);
+	if (msgLength == 0)
+	{
+		WCHAR* msg = new WCHAR[1];
+		msg[0] = 0;
+		return msg;
+	}
+
+	WCHAR* msg = new WCHAR[msgLength + 1];
+	ZeroMemory(msg, msgLength + 1);
+
+	//复制内容
+	wmemcpy_s(msg, msgLength + 1, (WCHAR*)(*(DWORD*)memAddress), msgLength + 1);
+	return msg;
+}
