@@ -15,9 +15,6 @@ using namespace std;
 
 //3.1.0.72
 
-void inlineHook();
-void InlinkHookJump();
-void OutPutData(DWORD);
 
 //声明函数
 VOID ShowDemoUI(HMODULE hModule);
@@ -34,6 +31,13 @@ VOID SentRoomMessageAt(HWND hwndDlg);
 VOID UnLoadMyself();
 BOOL JudgeSendStatus();
 
+//接收发送的消息
+BOOL JudgeSendStatus();
+void InlinkHookJudgeSendStatus();
+void JudgeSendStatusSendMsg(DWORD r_esi);
+
+VOID getUserWxId();
+
 ////定义变量
 DWORD wxBaseAddress = 0;
 //DWORD g_callAddr = 0x3A0CA0;
@@ -47,8 +51,12 @@ HWND g_hwndDlg;
 #define SEND_MSG_HOOK_ADDRESS 0x3A0CA0	
 #define SEND_MSG_BUFFER 0x5A8	
 
-#define SEND_MSG_STATUS_ADDRESS 0x37BD12
+#define SEND_MSG_SEND_STATUS_ADDRESS 0x37BD12
 DWORD g_jumpBackAddress = 0;
+
+#define USERINFO_WXID 0x18A3584	
+char g_myWxId[30] = { 0 };
+
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -59,6 +67,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
     {
+
         HANDLE hANDLE = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ShowDemoUI, hModule, NULL, 0);
         if (hANDLE != 0)
         {
@@ -88,7 +97,7 @@ VOID ShowDemoUI(HMODULE hModule)
 
 
 
-	DWORD funAddr = (DWORD)OutPutData;
+	DWORD funAddr = (DWORD)JudgeSendStatusSendMsg;
 
 	string funAddrtext = "funAddr：\t";
 	funAddrtext.append(Dec2Hex(funAddr));
@@ -104,6 +113,9 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 	{
 	case WM_INITDIALOG:
 		g_hwndDlg = hwndDlg;
+
+		getUserWxId();
+
 		break;
 
 	case WM_CLOSE:
@@ -180,12 +192,27 @@ string Dec2Hex(DWORD i)
 	return "0x" + s_temp;
 }
 
+//获取当前用户wxid
+VOID getUserWxId() {
+
+	DWORD base = (DWORD)GetModuleHandle(TEXT("WeChatWin.dll"));
+
+	//一级指针
+	DWORD pWxidAddr = base + USERINFO_WXID;
+
+	memcpy_s(g_myWxId, 30, (char*)(*(DWORD*)pWxidAddr), 30);
+
+	wchar_t* wWxid = AnsiToUnicode(g_myWxId);
+
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("登录用户WxID: %s \r\n"), wWxid);
+}
+
 
 
 BOOL JudgeSendStatus() {
 
 
-	DWORD hookAddress = wxBaseAddress + SEND_MSG_STATUS_ADDRESS;
+	DWORD hookAddress = wxBaseAddress + SEND_MSG_SEND_STATUS_ADDRESS;
 	g_jumpBackAddress = hookAddress + 6;
 
 
@@ -195,7 +222,7 @@ BOOL JudgeSendStatus() {
 	JmpCode[6 - 1] = 0x90;
 
 	//新跳转指令中的数据=跳转的地址-原地址（HOOK的地址）-跳转指令的长度
-	*(DWORD*)&JmpCode[1] = (DWORD)InlinkHookJump - hookAddress - 5;
+	*(DWORD*)&JmpCode[1] = (DWORD)InlinkHookJudgeSendStatus - hookAddress - 5;
 
 	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, JmpCode, 6, 0);
 
@@ -204,7 +231,7 @@ BOOL JudgeSendStatus() {
 
 //InlineHook完成后，程序在Hook点跳转到这里执行。
 //这里必须是裸函数
-__declspec(naked) void InlinkHookJump()
+__declspec(naked) void InlinkHookJudgeSendStatus()
 {
 	//补充代码
 	__asm
@@ -219,7 +246,7 @@ __declspec(naked) void InlinkHookJump()
 
 		//调用我们的处理函数
 		push esi
-		call OutPutData
+		call JudgeSendStatusSendMsg
 		add esp, 4
 
 		//恢复寄存器
@@ -230,7 +257,7 @@ __declspec(naked) void InlinkHookJump()
 	}
 }
 
-void OutPutData(DWORD r_esi)
+void JudgeSendStatusSendMsg(DWORD r_esi)
 {
 
 	/*地址跟接收消息一样*/
