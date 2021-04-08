@@ -51,8 +51,30 @@ HWND g_hwndDlg;
 #define SEND_MSG_HOOK_ADDRESS 0x3A0CA0	
 #define SEND_MSG_BUFFER 0x5A8	
 
+
+//第一个版本，获取文件时候，执行两次，使用第二个方案
+
+//6DDCBD01    52              push edx
+//6DDCBD02    50              push eax
+//6DDCBD03    57              push edi
+//6DDCBD04    8D45 DC         lea eax, dword ptr ss : [ebp - 0x24]
+//6DDCBD07    68 E053026F     push WeChatWi.6F0253E0; UNICODE "On %s : %I64d RealId : %I64d, SvrId : %I64d, Time "
+//6DDCBD0C    50              push eax
+//6DDCBD0D    E8 6E901F00     call WeChatWi.6DFC4D80; 是否失败
+//6DDCBD12    8B4D DC         mov ecx, dword ptr ss : [ebp - 0x24] ; 是否失败
+//6DDCBD15    83C4 34         add esp, 0x34
+//6DDCBD18    85C9            test ecx, ecx
+
 #define SEND_MSG_SEND_STATUS_ADDRESS 0x37BD12
 DWORD g_jumpBackAddress = 0;
+
+//第二个版本，上一个版本往上找一个方法
+//6DDCF903    8BCE            mov ecx, esi
+//6DDCF905    E8 66C3FFFF     call WeChatWi.6DDCBC70; 上2层 hook
+//6DDCF90A    83C4 14         add esp, 0x14
+#define SEND_MSG_SEND_STATUS_ADDRESS2 0x37F905
+#define SEND_MSG_SEND_STATUS_CALL_ADDR 0x37BC70
+DWORD g_jumpBackCallAddress = 0;
 
 #define USERINFO_WXID 0x18A3584	
 char g_myWxId[30] = { 0 };
@@ -211,20 +233,35 @@ VOID getUserWxId() {
 
 BOOL JudgeSendStatus() {
 
+	//第一个方案
+	//DWORD hookAddress = wxBaseAddress + SEND_MSG_SEND_STATUS_ADDRESS;
+	//g_jumpBackAddress = hookAddress + 6;
 
-	DWORD hookAddress = wxBaseAddress + SEND_MSG_SEND_STATUS_ADDRESS;
-	g_jumpBackAddress = hookAddress + 6;
+	////组装跳转数据
+	//BYTE JmpCode[6] = { 0 };
+	//JmpCode[0] = 0xE9;
+	//JmpCode[6 - 1] = 0x90;
 
+	////新跳转指令中的数据=跳转的地址-原地址（HOOK的地址）-跳转指令的长度
+	//*(DWORD*)&JmpCode[1] = (DWORD)InlinkHookJudgeSendStatus - hookAddress - 5;
+
+	//WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, JmpCode, 6, 0);
+
+
+
+	//第二个方案
+	DWORD hookAddress = wxBaseAddress + SEND_MSG_SEND_STATUS_ADDRESS2;
+	g_jumpBackAddress = hookAddress + 5;
+	g_jumpBackCallAddress = wxBaseAddress + SEND_MSG_SEND_STATUS_CALL_ADDR;
 
 	//组装跳转数据
-	BYTE JmpCode[6] = { 0 };
-	JmpCode[0] = 0xE9;
-	JmpCode[6 - 1] = 0x90;
+	BYTE jmpCode[5] = { 0 };
+	jmpCode[0] = 0xE9;
 
 	//新跳转指令中的数据=跳转的地址-原地址（HOOK的地址）-跳转指令的长度
-	*(DWORD*)&JmpCode[1] = (DWORD)InlinkHookJudgeSendStatus - hookAddress - 5;
+	*(DWORD*)&jmpCode[1] = (DWORD)InlinkHookJudgeSendStatus - hookAddress - 5;
 
-	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, JmpCode, 6, 0);
+	WriteProcessMemory(GetCurrentProcess(), (LPVOID)hookAddress, jmpCode, 5, 0);
 
 	return true;
 }
@@ -233,15 +270,37 @@ BOOL JudgeSendStatus() {
 //这里必须是裸函数
 __declspec(naked) void InlinkHookJudgeSendStatus()
 {
-	//补充代码
+	//第一个方案
+	//__asm
+	//{
+	//	//补充被覆盖的代码
+	//	mov ecx, dword ptr ss : [ebp - 0x24]
+	//	add esp, 0x34
+
+	//	//保存寄存器
+	//	pushad
+
+
+	//	//调用我们的处理函数
+	//	push esi
+	//	call JudgeSendStatusSendMsg
+	//	add esp, 4
+
+	//	//恢复寄存器
+	//	popad
+
+	//	//跳回去接着执行
+	//	jmp g_jumpBackAddress
+	//}
+
+
+	//第二个方案
 	__asm
 	{
-		//补充被覆盖的代码
-		mov ecx, dword ptr ss : [ebp - 0x24]
-		add esp, 0x34
-
+		
 		//保存寄存器
 		pushad
+		pushf
 
 
 		//调用我们的处理函数
@@ -250,9 +309,12 @@ __declspec(naked) void InlinkHookJudgeSendStatus()
 		add esp, 4
 
 		//恢复寄存器
+		popf
 		popad
 
 		//跳回去接着执行
+		//补充被覆盖的代码
+		call g_jumpBackCallAddress
 		jmp g_jumpBackAddress
 	}
 }
@@ -265,6 +327,9 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 	DWORD SvridOffset = 0x28;
 	//时间戳
 	DWORD timestampOffset = 0x3C;
+
+	//发消息是1，收消息是0
+	DWORD sendOrRecvOffset = 0x34;
 
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
@@ -292,6 +357,7 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 
 	INT64 Svrid = *((INT64*)(r_esi + SvridOffset));
 	DWORD msgType = *((DWORD*)(r_esi + msgTypeOffset));
+	DWORD sendOrRevc = *((DWORD*)(r_esi + sendOrRecvOffset));
 	DWORD msgSubType = *((DWORD*)(r_esi + subTypeOffset));
 	DWORD timestamp = *((DWORD*)(r_esi + timestampOffset));
 	wchar_t* wToWxId = GetMsgByAddress2(r_esi + friendOffset);
@@ -300,7 +366,7 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 	wchar_t* wFilePath = GetMsgByAddress2(r_esi + filePathOffset);
 	wchar_t* wRoomSender = GetMsgByAddress2(r_esi + roomMsgSenderOffset);
 
-	
+	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("发送或接收标志: %d \r\n"), sendOrRevc);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("Svrid: %I64d \r\n"), Svrid);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("时间戳: %I32d \r\n"), timestamp);
 	AddText(GetDlgItem(g_hwndDlg, INPUT_MSG), TEXT("信息类型: %d \r\n"), msgType);
