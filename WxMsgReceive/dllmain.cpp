@@ -237,6 +237,12 @@ VOID RecieveMsg(DWORD dEsp)
 
 	//消息类型
 	DWORD msgTypeOffset = 0x30;
+
+	//消息子类型
+	DWORD msgSubTypeOffset = 0xEC;
+
+
+
 	//发送人，好友或群ID
 	DWORD friendOffset = 0x40;
 	//群消息，消息发送者
@@ -264,6 +270,9 @@ VOID RecieveMsg(DWORD dEsp)
 	//[01文字] [03图片] [31 文件、转账、XML信息] [22语音消息] [02B视频信息][2710红包]
 	//DWORD msgType = *((DWORD*)(**msgAddress + msgTypeOffset));
 	DWORD msgType = *((DWORD*)(msgAddress + msgTypeOffset));
+
+	DWORD msgSubType = *((DWORD*)(msgAddress + msgSubTypeOffset));
+
 	receivedMessage.append(TEXT("消息类型:"));
 	switch (msgType)
 	{
