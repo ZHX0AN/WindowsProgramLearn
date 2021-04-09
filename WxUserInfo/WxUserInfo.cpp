@@ -30,6 +30,10 @@ DWORD weChatBaseAdress = 0;
 DWORD g_wxIdAddr = 0x18A3584;
 //昵称
 DWORD g_nameAddr = 0x18A35FC;
+//昵称长度，长度等于0x1F时，g_nameAddr存的是地址
+DWORD g_nameSizeAddr = 0x18A3610;
+
+
 //电话
 DWORD g_phoneNumberAddr = 0x18A3630;
 //扫描手机类型
@@ -191,28 +195,27 @@ BOOL GetUserInfoReal(HWND hwnd, DWORD dwPID) {
 
 	
 
-	//先读前四个字节，作为指针获取昵称值，如果读到值，则返回值；如果没有值表示不是指针，读昵称出来。
-	BYTE nameJudge[4] = { 0 };
-	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), nameJudge, 4, 0);
-	DWORD dNameReal = bytesToInt(nameJudge);
-	char name[100] = { 0 };
-	ReadProcessMemory(hProcess, (LPVOID)(dNameReal), name, 100, 0);
+	//昵称长度，长度小于0x10，g_nameAddr存的昵称，否则存的是地址
+	BYTE nameSzie[1] = { 0 };
+	ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameSizeAddr), nameSzie, 1, 0);
+	int nSize = nameSzie[0];
 
-	int nNameSize = strlen(name);
-	if (nNameSize >0) {
+	char name[100] = { 0 };
+	if (nSize < 0x1F) {
+		
+		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name, 100, 0);
+		TCHAR* content = UTF8ToUnicode(name);
+		AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字1: %s\r\n"), content);
+	}
+	else {
+	
+		BYTE nameAddress[4] = { 0 };
+		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), nameAddress, 4, 0);
+		DWORD dNameReal = bytesToInt(nameAddress);
+		ReadProcessMemory(hProcess, (LPVOID)(dNameReal), name, 100, 0);
 		TCHAR* content2 = UTF8ToUnicode(name);
 		AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字2: %s\r\n"), content2);
 	}
-	else {
-
-		char name2[100] = { 0 };
-		ReadProcessMemory(hProcess, (LPVOID)(weChatBaseAdress + g_nameAddr), name2, 100, 0);
-		TCHAR* content1 = UTF8ToUnicode(name2);
-		AddText(GetDlgItem(hwnd, IDC_TEXT_INFO), TEXT("微信名字1: %s\r\n"), content1);
-	}
-
-
-
 
 
 
