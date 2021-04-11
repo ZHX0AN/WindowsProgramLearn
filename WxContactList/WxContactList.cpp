@@ -169,10 +169,10 @@ int main()
 	
 	doc.AddMember("data", vData, doc.GetAllocator());
 
-	StringBuffer sb;
-	PrettyWriter<StringBuffer> writer(sb);
-	doc.Accept(writer);    // Accept() traverses the DOM and generates Handler events.
-	std::cout << sb.GetString() << std::endl;
+	//StringBuffer sb;
+	//PrettyWriter<StringBuffer> writer(sb);
+	//doc.Accept(writer);    // Accept() traverses the DOM and generates Handler events.
+	//std::cout << sb.GetString() << std::endl;
 
 	cin.get();
 }
@@ -201,7 +201,7 @@ VOID GetRoomInfo(DWORD roomAddress, rapidjson::Value* pVData) {
 
 	//好友：
 	//0xc,70:3,C8:1,
-	//0x30 微信账号
+	//0x30 微信账号 
 	//0x44 账号？
 	//0x78 好友备注
 	//0x8C 微信昵称
@@ -220,35 +220,49 @@ VOID GetRoomInfo(DWORD roomAddress, rapidjson::Value* pVData) {
 	//0x130 头像 - 小图片
 	//0x1bc 00000000
 
+
+		//联系人账号 wchat_t
+	TCHAR wWxId[50] = { 0 };
+	DWORD wxIdTemp = GetWxMemoryInt(hProcess, roomAddress + 0x30);
+	int wxIdSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x34);
+	ReadProcessMemory(hProcess, (LPVOID)wxIdTemp, wWxId, 100, 0);
+	_tprintf(TEXT("wxid: %s \n"), wWxId);
+
                                         
 	//联系人账号 wchat_t
 	TCHAR acount[50] = {0};
-	DWORD accountTemp = GetWxMemoryInt(hProcess, roomAddress + 0x30);
-	int accountSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x34);
+	DWORD accountTemp = GetWxMemoryInt(hProcess, roomAddress + 0x44);
+	int accountSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x48);
 	ReadProcessMemory(hProcess, (LPVOID)accountTemp, acount, 100, 0);
-	//_tprintf(TEXT("%s \n"), acount);
+	_tprintf(TEXT("account: %s \n"), acount);
 
 	//昵称
 	wchar_t nickname[50] = {0};
 	DWORD nicknameTemp = GetWxMemoryInt(hProcess, roomAddress + 0x8C);
 	int nicknameSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x90);
 	ReadProcessMemory(hProcess, (LPVOID)nicknameTemp, nickname, 100, 0);
-	//_tprintf(TEXT("%s \n"), nickname);
+	_tprintf(TEXT("%s \n"), nickname);
 
 	//头像
 	wchar_t avatar[200] = {0};
 	DWORD avatarTemp = GetWxMemoryInt(hProcess, roomAddress + 0x130);
 	int avatarSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x134);
 	ReadProcessMemory(hProcess, (LPVOID)avatarTemp, avatar, 400, 0);
-	//_tprintf(TEXT("%s \n"), avatar);
+	_tprintf(TEXT("samall: %s \n"), avatar);
 
+	//大头像
+	wchar_t avatarBig[200] = { 0 };
+	DWORD avatarBigTemp = GetWxMemoryInt(hProcess, roomAddress + 0x11C);
+	int avatarSizeBigTemp = GetWxMemoryInt(hProcess, roomAddress + 0x120);
+	ReadProcessMemory(hProcess, (LPVOID)avatarTemp, avatar, 400, 0);
+	_tprintf(TEXT("big: %s \n"), avatar);
 
 	//备注
 	wchar_t remark[100] = {0};
 	DWORD remarkTemp = GetWxMemoryInt(hProcess, roomAddress + 0x78);
 	int remarkSizeTemp = GetWxMemoryInt(hProcess, roomAddress + 0x7c);
 	ReadProcessMemory(hProcess, (LPVOID)remarkTemp, remark, 200, 0);
-	//_tprintf(TEXT("%s \n"), remark);
+	_tprintf(TEXT("%s \n"), remark);
 
 
 	//GetWxMemoryUnicodeString(GetWxMemoryInt(hProcess, roomAddress + 0x30), GetWxMemoryInt(hProcess, roomAddress + 0x34));
@@ -262,8 +276,13 @@ VOID GetRoomInfo(DWORD roomAddress, rapidjson::Value* pVData) {
 	rapidjson::Value vUserInfo(kObjectType);
 
 	//wxid
-	Value vWxid((char*)acount, doc.GetAllocator());
+	Value vWxid((char*)wWxId, doc.GetAllocator());
 	vUserInfo.AddMember("wxid", vWxid, doc.GetAllocator());
+
+
+	//accout
+	Value vAcount((char*)acount, doc.GetAllocator());
+	vUserInfo.AddMember("account", vAcount, doc.GetAllocator());
 
 	//nickname
 	Value vNickName((char*)nickname, doc.GetAllocator());

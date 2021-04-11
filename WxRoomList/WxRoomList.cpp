@@ -148,12 +148,12 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	DWORD header3 = GetWxMemoryInt(hProcess, roomAddress + 8);
 
 
-	//0x10	群号
+	//0x10 群号
 	//0x28 群号
 	//0x3c 好友id list
 	//0x6c 群主wxid
 	//0x84 在群中的昵称
-	//
+	//0xBC 群成员数量
 
 
 	//群号
@@ -164,6 +164,9 @@ VOID GetRoomInfo(DWORD roomAddress, DWORD log) {
 	DWORD addrTemp = GetWxMemoryInt(hProcess, roomAddress + 0x84);
 	DWORD size = GetWxMemoryInt(hProcess, roomAddress + 0x88);
 	GetWxMemoryUnicodeString(addrTemp, size);
+	//数量
+	DWORD number = GetWxMemoryInt(hProcess, roomAddress + 0xBC);
+	printf("number: %d \n", number);
 
 	char content[10000] = { 0 };
 	DWORD addr = GetWxMemoryInt(hProcess, roomAddress + 0x3C);

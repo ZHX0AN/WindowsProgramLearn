@@ -119,7 +119,7 @@ VOID ShowDemoUI(HMODULE hModule)
 
 
 
-	DWORD funAddr = (DWORD)JudgeSendStatusSendMsg;
+	DWORD funAddr = (DWORD)SentRoomMessageAt;
 
 	string funAddrtext = "funAddr：\t";
 	funAddrtext.append(Dec2Hex(funAddr));
@@ -503,13 +503,14 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 
 
 	 //组装发送的文本数据
-	 WCHAR wxMsgDlg[1024];
-	 uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsgDlg, 1024);
-	 if (uINT == 0)
-	 {
-		 MessageBoxA(NULL, "请填写发送的文本数据", "错误", MB_OK | MB_ICONERROR);
-		 return;
-	 }
+	 //WCHAR wxMsgDlg[1024];
+	 //uINT = GetDlgItemText(hwndDlg, INPUT_MSG, wxMsgDlg, 1024);
+	 //if (uINT == 0)
+	 //{
+		// MessageBoxA(NULL, "请填写发送的文本数据", "错误", MB_OK | MB_ICONERROR);
+		// return;
+	 //}
+	 wchar_t wxMsgDlg[100] = L"@洋葱Tor @张zhangjx 你好";
 	 TEXT_WX wxMsg(wxMsgDlg);
 
 	 
@@ -520,21 +521,84 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 		 MessageBoxA(NULL, "请填写at Wxid", "错误", MB_OK | MB_ICONERROR);
 		 return;
 	 }
+	 //TEXT_WXID wxAtId;
+	 //wxAtId.pWxid = wxAtDlg;
+	 //wxAtId.length = wcslen(wxAtDlg);
+	 //wxAtId.maxLength = wcslen(wxAtDlg) * 2;
+	 //wxAtId.fill1 = 0;
+	 //wxAtId.fill2 = 0;
 
-	 TEXT_WXID wxAtId;
-	 wxAtId.pWxid = wxAtDlg;
-	 wxAtId.length = wcslen(wxAtDlg);
-	 wxAtId.maxLength = wcslen(wxAtDlg) * 2;
-	 wxAtId.fill1 = 0;
-	 wxAtId.fill2 = 0;
 
-	 ROOM_AT roomAt;
-	 roomAt.at_WxidList = (DWORD)&wxAtId.pWxid;
-	 roomAt.at_end1 = roomAt.at_WxidList + 5 * 4;
-	 roomAt.at_end2 = roomAt.at_end1;
+	 BYTE buff[SEND_MSG_BUFFER] = { 0 };
+
+
+
+	 //zhang_75248396
+		// wxid_4j4mqsuzdgie22
+
+		// 小助手
+		// wxid_4sy2barbyny712
+
+
+		// 洋葱tor
+		// wxid_pl7nl7b8vzeq22
+	 //wchar_t wxAtDlg1[50] = L"wxid_4j4mqsuzdgie22";
+	 //TEXT_WXID wxAtId1;
+	 //wxAtId1.pWxid = wxAtDlg1;
+	 //wxAtId1.length = wcslen(wxAtDlg1);
+	 //wxAtId1.maxLength = wcslen(wxAtDlg1) * 2;
+	 //wxAtId1.fill1 = 0;
+	 //wxAtId1.fill2 = 0;
+
+	 //wchar_t wxAtDlg2[50] = L"wxid_pl7nl7b8vzeq22";
+	 //TEXT_WXID wxAtId2;
+	 //wxAtId2.pWxid = wxAtDlg2;
+	 //wxAtId2.length = wcslen(wxAtDlg2);
+	 //wxAtId2.maxLength = wcslen(wxAtDlg2) * 2;
+	 //wxAtId2.fill1 = 0;
+	 //wxAtId2.fill2 = 0;
+
+
+	 //ROOM_AT roomAt;
+	 //roomAt.at_WxidList = (DWORD)&wxAtId1.pWxid;
+	 //roomAt.at_end1 = roomAt.at_WxidList + 5 * 4;
+	 //roomAt.at_end2 = roomAt.at_end1;
+
+	 //ROOM_AT roomAt2;
+	 //roomAt2.at_WxidList = (DWORD)&wxAtId2.pWxid;
+	 //roomAt2.at_end1 = roomAt.at_WxidList + 5 * 4;
+	 //roomAt2.at_end2 = roomAt.at_end1;
+
+
+	 //ROOM_AT arr[2];
+	 //arr[0] = roomAt;
+	 //arr[1] = roomAt2;
+	 
+	 //------- 第二次尝试----------
+	 wchar_t wxAtDlg1[50] = L"wxid_4j4mqsuzdgie22";
+	 wchar_t wxAtDlg2[50] = L"wxid_pl7nl7b8vzeq22";
+
+	 StructWxid structWxid = { 0 };
+	 structWxid.pWxid = wxAtDlg1;
+	 structWxid.length = wcslen(wxAtDlg1);
+	 structWxid.maxLength = wcslen(wxAtDlg1) * 2;
+
+
+	 StructWxid structWxid2 = { 0 };
+	 structWxid2.pWxid = wxAtDlg2;
+	 structWxid2.length = wcslen(wxAtDlg2);
+	 structWxid2.maxLength = wcslen(wxAtDlg2) * 2;
+
+
+	 StructWxid atArr[2];
+	 atArr[0] = structWxid;
+	 atArr[1] = structWxid2;
+
+	 DWORD* asmAtArr = (DWORD*)&atArr;
+
 
 	 //定义一个缓冲区
-	 BYTE buff[SEND_MSG_BUFFER] = { 0 };
+	 
 
 	 WCHAR wxid2[50] = TEXT("1111111111111111111");
 
@@ -547,7 +611,7 @@ void JudgeSendStatusSendMsg(DWORD r_esi)
 
 		 push 0x1
 
-		 lea edi, roomAt
+		 lea edi, asmAtArr
 		 push edi
 
 
