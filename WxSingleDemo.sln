@@ -49,6 +49,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "19-RecvRevokeMsg", "19-Recv
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "05-GetUserInfo", "05-GetUserInfo\05-GetUserInfo.vcxproj", "{CC14A33F-AB07-45F8-B46C-82B946C75E9C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "21-GetChatRoomInfoByWxId", "21-GetChatRoomInfoByWxId\21-GetChatRoomInfoByWxId.vcxproj", "{00692CDB-5005-4F85-866A-3704137A1645}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -279,6 +281,16 @@ Global
 		{CC14A33F-AB07-45F8-B46C-82B946C75E9C}.Release|x64.Build.0 = Release|x64
 		{CC14A33F-AB07-45F8-B46C-82B946C75E9C}.Release|x86.ActiveCfg = Release|Win32
 		{CC14A33F-AB07-45F8-B46C-82B946C75E9C}.Release|x86.Build.0 = Release|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Debug|x64.ActiveCfg = Debug|x64
+		{00692CDB-5005-4F85-866A-3704137A1645}.Debug|x64.Build.0 = Debug|x64
+		{00692CDB-5005-4F85-866A-3704137A1645}.Debug|x86.ActiveCfg = Debug|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Debug|x86.Build.0 = Debug|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Release|Any CPU.ActiveCfg = Release|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Release|x64.ActiveCfg = Release|x64
+		{00692CDB-5005-4F85-866A-3704137A1645}.Release|x64.Build.0 = Release|x64
+		{00692CDB-5005-4F85-866A-3704137A1645}.Release|x86.ActiveCfg = Release|Win32
+		{00692CDB-5005-4F85-866A-3704137A1645}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
