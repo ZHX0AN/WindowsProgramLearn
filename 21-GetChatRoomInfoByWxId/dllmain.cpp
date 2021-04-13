@@ -1,4 +1,5 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#define _CRT_SECURE_NO_WARNINGS
 #include "pch.h"
 #include "resource.h"
 #include "shellapi.h"
@@ -61,8 +62,8 @@ VOID ShowDemoUI(HMODULE hModule);
 VOID UnLoadMyself();
 BOOL GetChatRoomInfo(HWND hwndDlg, WxGroupInfo* info);
 string ReadAsciiString(DWORD address);
-
-
+wchar_t* AnsiToUnicode(const char* szStr);
+void GetUserInfoByWxid(wchar_t* userwxid);
 
 
 //窗口回调函数，处理窗口事件
@@ -87,10 +88,22 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 
 			string member = ReadAsciiString((DWORD)info.member);
 			int number = info.number;
+
+			char* memberList = info.member;
+
+			const char flag[3] = "^G";
+			char* wxidItem;
+			char* buf;
+			wxidItem = strtok_s(memberList, flag, &buf);
+			while (wxidItem != NULL) {
+				wchar_t* wTemp = AnsiToUnicode(wxidItem);
+				GetUserInfoByWxid(wTemp);
+
+				wxidItem = strtok_s(NULL, flag, &buf);
+			}
+
 			break;
 		}
-
-
 		else if (wParam == IDCANCEL) {
 			UnLoadMyself();
 		}
@@ -163,7 +176,7 @@ BOOL GetChatRoomInfo(HWND hwndDlg, WxGroupInfo* info)
 	id.maxLen = groupid.size() * 2;
 
 
-	int ret = 0;
+	int iRet = 0;
 	__asm {
 		pushad;
 		pushfd;
@@ -176,12 +189,80 @@ BOOL GetChatRoomInfo(HWND hwndDlg, WxGroupInfo* info)
 		lea ebx, id;
 		push ebx;
 		call call_query;
-		mov ret, eax;
+		mov iRet, eax;
 
 		popfd;
 		popad;
 	}
-	return ret == 1;
+	return iRet == 1;
+
+}
+
+
+struct GeneralStruct
+{
+	wchar_t* pstr;
+	int iLen;
+	int iMaxLen;
+	int full1;
+	int full2;
+	GeneralStruct(wchar_t* pString)
+	{
+		pstr = pString;
+		iLen = wcslen(pString);
+		iMaxLen = iLen * 2;
+		full1 = 0;
+		full2 = 0;
+	}
+};
+
+
+#define WxGetUserInfoWithNoNetworkCall1 0x574540		 //根据微信ID获取用户信息  1
+#define WxGetUserInfoWithNoNetworkCall2 0x319E70		 //根据微信ID获取用户信息  1
+#define WxGetUserInfoWithNoNetworkCall3 0x4E53C0		 //根据微信ID获取用户信息  1
+
+void GetUserInfoByWxid(wchar_t* userwxid)
+{
+	DWORD WechatBase = (DWORD)GetModuleHandle(L"WeChatWin.dll");
+
+	DWORD dwCall1 = WechatBase + WxGetUserInfoWithNoNetworkCall1;
+	DWORD dwCall2 = WechatBase + WxGetUserInfoWithNoNetworkCall2;
+	DWORD dwCall3 = WechatBase + WxGetUserInfoWithNoNetworkCall3;
+
+	char buff[0x508] = { 0 };
+	char* asmHeadBuff = buff;
+	char* asmBuff = &buff[0x18];
+
+	GeneralStruct pWxid(userwxid);
+	char* asmWxid = (char*)&pWxid.pstr;
+
+	__asm
+	{
+		pushad;
+		mov edi, asmWxid;		//微信ID结构体	
+		mov eax, asmBuff;		//缓冲区
+		push eax;
+		sub esp, 0x14;
+		mov ecx, esp;
+		push - 0x1;
+		mov dword ptr ds : [ecx] , 0x0;
+		mov dword ptr ds : [ecx + 0x4] , 0x0;
+		mov dword ptr ds : [ecx + 0x8] , 0x0;
+		mov dword ptr ds : [ecx + 0xC] , 0x0;
+		mov dword ptr ds : [ecx + 0x10] , 0x0;
+		push dword ptr ds : [edi] ;	//微信ID
+		call dwCall1;				//call1
+		call dwCall2;				//call2
+		mov eax, asmHeadBuff;
+		push eax;
+		mov ecx, asmBuff;
+		call dwCall3;
+		popad
+	}
+
+	LPVOID lpWxid = *((LPVOID*)((DWORD)buff + 0x20));				//微信ID
+	LPVOID lpWxcount = *((LPVOID*)((DWORD)buff + 0x34));			//微信账号
+	LPVOID lpNickName = *((LPVOID*)((DWORD)buff + 0x7C));			//昵称
 
 }
 
@@ -215,4 +296,18 @@ string ReadAsciiString(DWORD address) {
 	memcpy(cValue, (const void*)address, 0x1000);
 	sValue = string(cValue);
 	return sValue;
+}
+
+
+
+wchar_t* AnsiToUnicode(const char* szStr)
+{
+	int nLen = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, NULL, 0);
+	if (nLen == 0)
+	{
+		return NULL;
+	}
+	wchar_t* pResult = new wchar_t[nLen];
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, pResult, nLen);
+	return pResult;
 }
