@@ -65,6 +65,8 @@ string ReadAsciiString(DWORD address);
 wchar_t* AnsiToUnicode(const char* szStr);
 void GetUserInfoByWxid(wchar_t* userwxid);
 
+wstring GetMsgByAddress(DWORD memAddress);
+
 
 //窗口回调函数，处理窗口事件
 INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -260,13 +262,13 @@ void GetUserInfoByWxid(wchar_t* userwxid)
 		popad
 	}
 
-	LPVOID lpWxid = *((LPVOID*)((DWORD)buff + 0x20));				//微信ID
-	LPVOID lpWxcount = *((LPVOID*)((DWORD)buff + 0x34));			//微信账号
-	LPVOID lpNickName = *((LPVOID*)((DWORD)buff + 0x7C));			//昵称
+	wstring nickname = GetMsgByAddress((DWORD)buff + 0x7C);
+
+	//LPVOID lpWxid = *((LPVOID*)((DWORD)buff + 0x20));				//微信ID
+	//LPVOID lpWxcount = *((LPVOID*)((DWORD)buff + 0x34));			//微信账号
+	//LPVOID lpNickName = *((LPVOID*)((DWORD)buff + 0x7C));			//昵称
 
 }
-
-
 
 
 //卸载自己
@@ -310,4 +312,19 @@ wchar_t* AnsiToUnicode(const char* szStr)
 	wchar_t* pResult = new wchar_t[nLen];
 	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, szStr, -1, pResult, nLen);
 	return pResult;
+}
+
+
+wstring GetMsgByAddress(DWORD memAddress)
+{
+	wstring tmp;
+	DWORD msgLength = *(DWORD*)(memAddress + 4);
+	if (msgLength > 0) {
+		WCHAR* msg = new WCHAR[msgLength + 1]{ 0 };
+		wmemcpy_s(msg, msgLength + 1, (WCHAR*)(*(DWORD*)memAddress), msgLength + 1);
+		tmp = msg;
+		delete[]msg;
+	}
+	return  tmp;
+
 }

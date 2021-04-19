@@ -26,6 +26,43 @@ void GetHeaderUrl(HWND hwnd, wchar_t* wxid);
 VOID AddText(HWND hwnd, PCTSTR pszFormat, ...);
 
 wstring GetMsgByAddress(DWORD memAddress);
+wstring GetNicknameByWxid(wstring userwxid);
+
+
+
+typedef struct _WXSTRING {
+	wchar_t* pstr;
+	int len;
+	int maxLen;
+	int fill1 = 0;
+	int fill2 = 0;
+} WxString, * PWxString;
+
+typedef struct _WXUSERINFO {
+	char top[0x8];
+	WxString wxid;
+	WxString account;
+	WxString vData;
+	int un_0;
+	int un_1;
+	char un_2[0x18];
+	WxString name;
+	char un_3[0x28];
+	int un_4;
+	WxString nameUpper;
+	WxString nameUn;
+	char un_5[0x28];
+	WxString pic;
+	WxString img;
+	char* md5;
+	char un_6[0xC];
+	int un_7;
+	int addSource;
+	char un_8[0x2AC];
+} WxUserInfo, * PWxUserInfo;
+
+
+bool GetUserInfoByWxid(wstring wxid, WxUserInfo* info);
 
 
 //微信通用结构体
@@ -108,8 +145,19 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 				return 0;
 			}
 
+			//获取头url
+			//GetHeaderUrl(hwndDlg, wWxId);
 
-			GetHeaderUrl(hwndDlg, wWxId);
+			//第一版
+			//WxUserInfo info = { 0 };
+			//GetUserInfoByWxid(wWxId, &info);
+
+			//wstring w = info.wxid.pstr;
+			//wstring name = info.name.pstr;
+
+			//第二版
+			GetNicknameByWxid(wWxId);
+
 		}
 		break;
 	default:
@@ -119,6 +167,8 @@ INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM w
 }
 
 void GetHeaderUrl(HWND hwnd, wchar_t* wxid) {
+	
+	
 	// 获取微信基址
 	DWORD winAddress = wxBaseAddress;
 	// 开始获取好友详情数据
@@ -179,4 +229,99 @@ wstring GetMsgByAddress(DWORD memAddress)
 		delete[]msg;
 	}
 	return  tmp;
+}
+
+
+
+//第一版,不行
+bool GetUserInfoByWxid(wstring wxid, WxUserInfo* info) {
+	WxString temp = { 0 };
+	temp.pstr = (wchar_t*)wxid.c_str();
+	temp.len = wxid.size();
+	temp.maxLen = wxid.size() * 2;
+
+	//DWORD call_1 = Util->Offset(0x7B2241C0 - 0x7ACB0000);
+	//DWORD call_2 = Util->Offset(0x7AD11900 - 0x7ACB0000);
+	//DWORD call_3 = Util->Offset(0x7AFC9E70 - 0x7ACB0000);
+
+	DWORD winAddress = wxBaseAddress;
+
+	DWORD call_1 = winAddress + 0x7B2241C0 - 0x7ACB0000;
+	DWORD call_2 = winAddress + 0x7AD11900 - 0x7ACB0000;
+	DWORD call_3 = winAddress + 0x7AFC9E70 - 0x7ACB0000;
+
+
+	int ret = 0;
+	__asm {
+		pushad;
+		pushfd;
+
+		mov edi, info;
+		push edi;
+		sub esp, 0x14;
+		lea eax, temp;
+		mov ecx, esp;
+		push eax;
+
+		call call_1;
+		call call_2;
+		call call_3;
+
+		mov ret, eax;
+
+		popfd;
+		popad;
+	}
+	return ret == 1;
+}
+
+
+//第二版
+#define WxGetNativeUserInfoByWxidCall1 0x574540
+#define WxGetNativeUserInfoByWxidCall2 0x319E70
+#define WxGetNativeUserInfoByWxidCall3 0x4E53C0
+
+wstring GetNicknameByWxid(wstring userwxid)
+{
+	DWORD dwCall1 = wxBaseAddress + WxGetNativeUserInfoByWxidCall1;
+	DWORD dwCall2 = wxBaseAddress + WxGetNativeUserInfoByWxidCall2;
+	DWORD dwCall3 = wxBaseAddress + WxGetNativeUserInfoByWxidCall3;
+
+	char buff[0x508] = { 0 };
+	char* asmHeadBuff = buff;
+	char* asmBuff = &buff[0x18];
+
+	//GeneralStruct pWxid = { 0 };
+	//pWxid.pstr = (wchar_t*)userwxid.c_str();
+	//pWxid.iLen = userwxid.size();
+	//pWxid.iMaxLen = userwxid.size();
+
+	GeneralStruct pWxid = { (wchar_t*)userwxid.c_str() };
+
+	__asm
+	{
+		pushad;
+		lea edi, pWxid;
+		mov eax, asmBuff;
+		push eax;
+		sub esp, 0x14;
+		mov ecx, esp;
+		push - 0x1;
+		mov dword ptr ds : [ecx] , 0x0;
+		mov dword ptr ds : [ecx + 0x4] , 0x0;
+		mov dword ptr ds : [ecx + 0x8] , 0x0;
+		mov dword ptr ds : [ecx + 0xC] , 0x0;
+		mov dword ptr ds : [ecx + 0x10] , 0x0;
+		push dword ptr ds : [edi] ;
+		call dwCall1;
+		call dwCall2;
+		lea eax, asmHeadBuff;
+		push eax;
+		mov ecx, asmBuff;
+		call dwCall3;
+		popad
+	}
+
+	wstring nickname = GetMsgByAddress((DWORD)buff + 0x7C);
+	return nickname;
 }

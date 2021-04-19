@@ -172,6 +172,9 @@ VOID Dlg_PopulateProcessList(HWND hwnd) {
 		processNext = Process32Next(handle, &pe32);
 
 		StringCchPrintf(sz, _countof(sz), TEXT("%s     (0x%08X)"), pe32.szExeFile, pe32.th32ProcessID);
+
+		OutputDebugString(sz);
+		OutputDebugString(L"\n\t");
 		int n = ComboBox_AddString(hwndList, sz);
 
 		ComboBox_SetItemData(hwndList, n, pe32.th32ProcessID);

@@ -31,21 +31,9 @@ DWORD wxBaseAddress = 0;
 
 BOOL flag = true;
 
-///**
-// * 发送文件
-// */
-//#define SEND_FILE_PARAM 0x1550368
-//#define SEND_FILE_ADDR0 0x574180
-//
-//#define SEND_FILE_ADDR1 0x5741C0
-//#define SEND_FILE_ADDR2 0x5741C0
-//#define SEND_FILE_ADDR3 0x66CB0
-//#define SEND_FILE_ADDR4 0x2B7600
-//
-//#define BUFF_SIZE 0x350
-
-
-
+/**
+ * 发送文件
+ */
 #define WxFileMessage1 0x574180				 //发送文件消息   1
 #define WxFileMessage2 0x5741C0				 //发送文件消息   1
 #define WxFileMessage3 0x66CB0				 //发送文件消息   1
